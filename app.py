@@ -43,9 +43,9 @@ def get_data():
     })
     
     InfoDb.append({
-        "FirstName": "Zachary",
+        "FirstName": "Zach",
         "LastName": "Peltz",
-        "DOB": "February 29",
+        "DOB": "March 22",
         "Residence": "San Diego",
         "Email": "zacharyp16044@stu.powayusd.com",
         "favorite_pokemon": ["Arceus, Dialga, Lugia"]
