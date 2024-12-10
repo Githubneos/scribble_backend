@@ -30,7 +30,7 @@ def get_data():
         "DOB": "January 31",
         "Residence": "San Diego",
         "Email": "maxwellg56824@stu.powayusd.com",
-        "Owns_Cars": ["2022_BMW_X6"]
+        "Owns_Cars": ["2022_BMW_X6, Volvo_XC90, Volvo_S60, Mercedes_GLE350"]
     })
         
     InfoDb.append({
