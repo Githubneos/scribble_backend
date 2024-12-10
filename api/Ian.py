@@ -1,5 +1,3 @@
-%%python --bg
-
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -23,16 +21,6 @@ def get_data():
         "Residence": "San Diego",
         "Email": "ianm02879@stu.powayusd.com",
         "Owns_Cars": ["2006 Honda SUV"]
-    })
-
-    # add a row to list, an Info record
-    InfoDb.append({
-        "FirstName": "Shane",
-        "LastName": "Lopez",
-        "DOB": "February 27",
-        "Residence": "San Diego",
-        "Email": "slopez@powayusd.com",
-        "Owns_Cars": ["2021-Insight"]
     })
     
     return jsonify(InfoDb)
