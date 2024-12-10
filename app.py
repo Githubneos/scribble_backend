@@ -39,7 +39,7 @@ def get_data():
         "DOB": "August 15",
         "Residence": "San Diego",
         "Email": "dakshag45035@stu.powayusd.com",
-        "favorite_pokemon": ["Xernias, Yveltal, Zygarde"]
+        "favorite_pokemon": ["Rayquaza, Yveltal, Zygarde"]
     })
     
     InfoDb.append({
