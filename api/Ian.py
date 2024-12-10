@@ -22,16 +22,6 @@ def get_data():
         "Email": "ianm02879@stu.powayusd.com",
         "Owns_Cars": ["2006 Honda SUV"]
     })
-
-    # add a row to list, an Info record
-    InfoDb.append({
-        "FirstName": "Shane",
-        "LastName": "Lopez",
-        "DOB": "February 27",
-        "Residence": "San Diego",
-        "Email": "slopez@powayusd.com",
-        "Owns_Cars": ["2021-Insight"]
-    })
     
     return jsonify(InfoDb)
 
