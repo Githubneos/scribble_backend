@@ -4,8 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from __init__ import app
 from api.jwt_authorize import token_required
-from model.user import user
-from model.section import section
+from model.user import User
+from model.section import Section
 
 app = Flask(__name__)
 
