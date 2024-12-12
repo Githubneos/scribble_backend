@@ -41,5 +41,4 @@ def say_hello():
     return html_content
 
 if __name__ == '__main__':
-    # starts flask server on default port, http://127.0.0.1:5001
-    app.run(port=5001)
+    app.run(port=5001) # starts flask server on default port, http://127.0.0.1:5001

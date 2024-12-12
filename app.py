@@ -30,9 +30,31 @@ def get_data():
 
     # add a row to list, an Info record
     InfoDb.append({
+<<<<<<< HEAD
         "FirstName": "Zachary",
+=======
+        "FirstName": "Maxwell",
+        "LastName": "Gaudinez",
+        "DOB": "January 31",
+        "Residence": "San Diego",
+        "Email": "maxwellg56824@stu.powayusd.com",
+        "Owns_Cars": ["2022_BMW_X6, Volvo_XC90, Volvo_S60, Mercedes_GLE350"]
+    })
+        
+    InfoDb.append({
+        "FirstName": "Daksha",
+        "LastName": "Gowda",
+        "DOB": "August 15",
+        "Residence": "San Diego",
+        "Email": "dakshag45035@stu.powayusd.com",
+        "favorite_pokemon": ["Rayquaza, Yveltal, Zygarde"]
+    })
+    
+    InfoDb.append({
+        "FirstName": "Zach",
+>>>>>>> 13c152d4eac00065668e7981fb1a74ccabed360e
         "LastName": "Peltz",
-        "DOB": "February 29",
+        "DOB": "March 22",
         "Residence": "San Diego",
         "Email": "zacharyp16044@stu.powayusd.com",
         "favorite_pokemon": ["Arceus, Dialga, Lugia"]
