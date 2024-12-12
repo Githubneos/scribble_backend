@@ -23,25 +23,12 @@ def get_data():
         "Favorite_Movies": [ "Hangover, Superbad, Jurassic Park, Ted"]
     })
 
+@app.route('/api/Zach')
+def get_data():
+    # start a list, to be used like a information database
+    InfoDb = []
+
     # add a row to list, an Info record
-    InfoDb.append({
-        "FirstName": "Maxwell",
-        "LastName": "Gaudinez",
-        "DOB": "January 31",
-        "Residence": "San Diego",
-        "Email": "maxwellg56824@stu.powayusd.com",
-        "Owns_Cars": ["2022_BMW_X6"]
-    })
-        
-    InfoDb.append({
-        "FirstName": "Daksha",
-        "LastName": "Gowda",
-        "DOB": "August 15",
-        "Residence": "San Diego",
-        "Email": "dakshag45035@stu.powayusd.com",
-        "favorite_pokemon": ["Xernias, Yveltal, Zygarde"]
-    })
-    
     InfoDb.append({
         "FirstName": "Zachary",
         "LastName": "Peltz",
@@ -50,7 +37,38 @@ def get_data():
         "Email": "zacharyp16044@stu.powayusd.com",
         "favorite_pokemon": ["Arceus, Dialga, Lugia"]
     })
-    
+
+@app.route('/api/Maxwell')
+def get_data():
+    # start a list, to be used like a information database
+    InfoDb = []
+# add a row to list, an Info record
+    InfoDb.append({
+        "FirstName": "Maxwell",
+        "LastName": "Gaudinez",
+        "DOB": "January 31",
+        "Residence": "San Diego",
+        "Email": "maxwellg56824@stu.powayusd.com",
+        "Owns_Cars": ["2022_BMW_X6"]
+    })
+
+@app.route('/api/Daksha')
+def get_data():
+    # start a list, to be used like a information database
+    InfoDb = []
+    InfoDb.append({
+        "FirstName": "Daksha",
+        "LastName": "Gowda",
+        "DOB": "August 15",
+        "Residence": "San Diego",
+        "Email": "dakshag45035@stu.powayusd.com",
+        "favorite_pokemon": ["Xernias, Yveltal, Zygarde"]
+    })
+
+@app.route('/api/Ian')
+def get_data():
+    # start a list, to be used like a information database
+    InfoDb = []
     InfoDb.append({
         "FirstName": "Ian",
         "LastName": "Manangan",
