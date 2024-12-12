@@ -6,6 +6,8 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 from __init__ import app
 from api.jwt_authorize import token_required
+from model.user import user
+from model.section import section
 
 # Mock for machine learning analysis
 def analyze_drawing(image_path):
