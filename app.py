@@ -30,9 +30,7 @@ def get_data():
 
     # add a row to list, an Info record
     InfoDb.append({
-<<<<<<< HEAD
         "FirstName": "Zachary",
-=======
         "FirstName": "Maxwell",
         "LastName": "Gaudinez",
         "DOB": "January 31",
@@ -52,7 +50,6 @@ def get_data():
     
     InfoDb.append({
         "FirstName": "Zach",
->>>>>>> 13c152d4eac00065668e7981fb1a74ccabed360e
         "LastName": "Peltz",
         "DOB": "March 22",
         "Residence": "San Diego",
