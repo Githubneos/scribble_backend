@@ -22,10 +22,8 @@ def update_statistics():
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
-
         if 'correct' not in data and 'wrong' not in data:
             return jsonify({"error": "Invalid data. 'correct' or 'wrong' are required."}), 400
-
         # Validate that the values are integers
         if 'correct' in data:
             try:
@@ -33,19 +31,16 @@ def update_statistics():
                 statistics['correct_guesses'] += correct_value
             except ValueError:
                 return jsonify({"error": "'correct' value must be an integer"}), 400
-
         if 'wrong' in data:
             try:
                 wrong_value = int(data['wrong'])
                 statistics['wrong_guesses'] += wrong_value
             except ValueError:
                 return jsonify({"error": "'wrong' value must be an integer"}), 400
-
         return jsonify({
             "status": "Statistics updated successfully.",
             "current_stats": statistics
         }), 200
-
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
