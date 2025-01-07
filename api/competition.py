@@ -54,29 +54,33 @@ def timer_status():
 
 @app.route('/api/save_drawing', methods=['POST'])
 def save_drawing():
-    """API endpoint to save drawing data."""
     data = request.json
     canvas_data = data.get("canvasData")
 
     if not canvas_data or not isinstance(canvas_data, str):
         return jsonify({"error": "Invalid data. Provide a valid Base64-encoded image."}), 400
 
-    # Decode the Base64 image
-    header, encoded = canvas_data.split(",", 1)
-    image_data = base64.b64decode(encoded)
+    try:
+        # Decode the Base64 image
+        header, encoded = canvas_data.split(",", 1)
+        image_data = base64.b64decode(encoded)
 
-    # Save the image on the server
-    timestamp = int(time.time())
-    filename = f"drawing_{timestamp}.png"
-    file_path = os.path.join("saved_drawings", filename)
+        # Save the image on the server
+        timestamp = int(time.time())
+        filename = f"drawing_{timestamp}.png"
+        file_path = os.path.join("saved_drawings", filename)
 
-    # Ensure the directory exists
-    os.makedirs("saved_drawings", exist_ok=True)
+        # Ensure the directory exists
+        os.makedirs("saved_drawings", exist_ok=True)
 
-    with open(file_path, "wb") as f:
-        f.write(image_data)
+        with open(file_path, "wb") as f:
+            f.write(image_data)
 
-    return jsonify({"message": "Drawing saved on server", "filename": filename})
+        return jsonify({"message": "Drawing saved on server", "filename": filename})
+
+    except Exception as e:
+        # Catch decoding or file writing errors
+        return jsonify({"error": f"Failed to save image: {str(e)}"}), 500
 
 @app.route('/api/get_drawings', methods=['GET'])
 def get_drawings():
