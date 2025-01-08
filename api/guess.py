@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
-import os
 
 # Initialize a Flask application
 app = Flask(__name__)
@@ -10,6 +9,16 @@ CORS(app, supports_credentials=True, origins='*')  # Allow all origins (*)
 # In-memory storage for chat logs and user stats
 chat_logs = []
 user_stats = {}
+
+# Utility function to validate input data
+def validate_request_data(data, required_keys):
+    """Validates that the data contains all required keys."""
+    if not data:
+        return False, "Request data is missing."
+    missing_keys = required_keys - data.keys()
+    if missing_keys:
+        return False, f"Missing required keys: {', '.join(missing_keys)}"
+    return True, None
 
 # API endpoint to get all chat logs
 @app.route('/api/guesses', methods=['GET'])
@@ -21,8 +30,11 @@ def get_guesses():
 def save_guess():
     data = request.json  # Expecting JSON input
     required_keys = {'user', 'guess', 'is_correct', 'drawing_id'}
-    if not data or not required_keys.issubset(data):
-        return jsonify({"error": "Invalid data. 'user', 'guess', 'is_correct', and 'drawing_id' are required."}), 400
+    
+    # Validate input data
+    is_valid, error_message = validate_request_data(data, required_keys)
+    if not is_valid:
+        return jsonify({"error": error_message}), 400
 
     user = data['user']
     guess = data['guess']
@@ -99,4 +111,4 @@ if __name__ == '__main__':
     import sys
     # Use command-line argument for the port
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 5001
-    app.run(host="0.0.0.0", port=port)
+    app.run
