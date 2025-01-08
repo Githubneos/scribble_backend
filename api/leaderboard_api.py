@@ -15,7 +15,6 @@ CORS(app,
      methods=['GET', 'POST'],
      allow_headers=['Content-Type'])
 
-# Rest of your code remains the same...
 # Initialize with some example data
 leaderboard_db = [
     {
