@@ -4,7 +4,7 @@ import os
 import base64
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins='*')  
+
 
 drawings_dir = "drawings"
 os.makedirs(drawings_dir, exist_ok=True)  
