@@ -4,19 +4,26 @@ import os
 # Initialize a Flask application
 app = Flask(__name__)
 # It's better to specify allowed origins explicitly rather than using '*'
+
+    
 statistics = {
     "correct_guesses": 0,
     "wrong_guesses": 0,
-    "hints_used": 1
+    "hints_used": 1,
+    "total_rounds": 20,
+    "Current_Streak": 3
 }
+
 # API endpoint to get statistics
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
+    breakpoint()
     return jsonify(statistics)
 # API endpoint to update statistics
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
     try:
+        breakpoint()
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -44,9 +51,12 @@ def update_statistics():
 
 # HTML endpoint for a basic welcome page
 
+
 if __name__ == '__main__':
     # Set the port dynamically via environment variable or default to 5001
-    port = int(os.environ.get("FLASK_RUN_PORT", 5001))
+    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     # In production, set debug=False
     app.run(host="0.0.0.0", port=port, debug=True)
+
+
     
