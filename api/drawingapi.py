@@ -40,20 +40,6 @@ def get_drawing(filename):
     return send_from_directory(drawings_dir, filename)
 
 
-@app.route('/')
-def say_hello():
-    html_content = """
-    <html>
-    <head>
-        <title>Drawing Board</title>
-    </head>
-    <body>
-        <h2>Welcome to the Drawing Board API!</h2>
-        <p>Use the endpoint <code>/api/save-drawing</code> to save your drawings.</p>
-    </body>
-    </html>
-    """
-    return html_content
 
 if __name__ == '__main__':
     app.run(port=8887)
