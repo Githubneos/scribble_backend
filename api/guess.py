@@ -4,7 +4,6 @@ from datetime import datetime
 
 # Initialize a Flask application
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins='*')  # Allow all origins (*)
 
 # In-memory storage for chat logs and user stats
 chat_logs = []
@@ -85,27 +84,6 @@ def get_user_stats(username):
 
     return jsonify(user_stat), 200
 
-# HTML endpoint for a basic welcome page
-@app.route('/')
-def say_hello():
-    html_content = """
-    <html>
-    <head>
-        <title>Guessing Game API</title>
-    </head>
-    <body>
-        <h2>Welcome to the Guessing Game API</h2>
-        <p>Use the API to save and retrieve guesses and user statistics.</p>
-        <p>Endpoints:</p>
-        <ul>
-            <li>GET /api/guesses - Retrieve all chat logs</li>
-            <li>POST /api/submit_guess - Submit a guess</li>
-            <li>GET /api/user_stats/&lt;username&gt; - Retrieve stats for a specific user</li>
-        </ul>
-    </body>
-    </html>
-    """
-    return html_content
 
 if __name__ == '__main__':
     import sys
