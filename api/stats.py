@@ -9,7 +9,8 @@ CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'https://
 # Note: In a production environment, you should use a persistent database
 statistics = {
     "correct_guesses": 0,
-    "wrong_guesses": 0
+    "wrong_guesses": 0,
+    "hints_used": 1
 }
 # API endpoint to get statistics
 @app.route('/api/statistics', methods=['GET'])
@@ -72,3 +73,4 @@ if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 5001))
     # In production, set debug=False
     app.run(host="0.0.0.0", port=port, debug=True)
+    
