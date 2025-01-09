@@ -83,10 +83,3 @@ def get_user_stats(username):
         return jsonify({"error": f"No stats found for user '{username}'."}), 404
 
     return jsonify(user_stat), 200
-
-
-if __name__ == '__main__':
-    import sys
-    # Use command-line argument for the port
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5001
-    app.run
