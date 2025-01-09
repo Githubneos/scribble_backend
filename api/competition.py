@@ -53,6 +53,7 @@ def timer_status():
 
 @app.route('/api/save_drawing', methods=['POST'])
 def save_drawing():
+    breakpoint()
     data = request.json
     canvas_data = data.get("canvasData")
 
@@ -87,4 +88,4 @@ def get_drawings():
     return jsonify(drawings)
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    app.run(port=8887)
