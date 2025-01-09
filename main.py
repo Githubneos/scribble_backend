@@ -26,6 +26,7 @@ from api.nestPost import nestPost_api # Justin added this, custom format for his
 from api.messages_api import messages_api # Adi added this, messages for his website
 from api.carphoto import car_api
 from api.carChat import car_chat_api
+from api.guess import guess_api
 
 from api.vote import vote_api
 # database Initialization functions
@@ -229,4 +230,4 @@ app.cli.add_command(custom_cli)
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
-    app.run(debug=True, host="0.0.0.0", port="8887")
+    app.run(debug=True, host="0.0.0.0", port="5001")
