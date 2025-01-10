@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS  # Import CORS
 import os
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # In-memory database (replace with persistent storage in production)
 leaderboard_db = [
@@ -16,8 +18,6 @@ leaderboard_db = [
         "score": 88
     }
 ]
-
-
 
 @app.route('/api/leaderboard', methods=['POST'])
 def add_leaderboard_entry():
@@ -52,8 +52,8 @@ def add_leaderboard_entry():
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
+    breakpoint()
     try:
-        breakpoint()
         sorted_leaderboard = sorted(leaderboard_db, key=lambda x: x['score'], reverse=True)
         return jsonify(sorted_leaderboard), 200
     except Exception as e:
