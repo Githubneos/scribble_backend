@@ -48,6 +48,7 @@ def start_timer():
 
 @app.route('/api/timer_status', methods=['GET'])
 def timer_status():
+    breakpoint()
     """API endpoint to get the current timer status."""
     return jsonify(timer_state)
 
@@ -87,4 +88,5 @@ def get_drawings():
     return jsonify(drawings)
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
+    app.run(host="0.0.0.0", port=port, debug=True)
