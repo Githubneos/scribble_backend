@@ -17,6 +17,7 @@ statistics = {
 # API endpoint to get statistics
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
+    breakpoint()
     return jsonify(statistics)
 # API endpoint to update statistics
 @app.route('/api/statistics', methods=['POST'])
