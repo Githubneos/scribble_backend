@@ -52,7 +52,6 @@ def add_leaderboard_entry():
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
-    breakpoint()
     try:
         sorted_leaderboard = sorted(leaderboard_db, key=lambda x: x['score'], reverse=True)
         return jsonify(sorted_leaderboard), 200
