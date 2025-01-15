@@ -16,6 +16,8 @@ from flask import Blueprint, request, jsonify, current_app
 
 
 
+
+
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
@@ -41,6 +43,7 @@ from model.channel import Channel, initChannels
 from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
+from model.guess import initGuessDataTable
 # server only Views
 
 # register URIs for api endpoints

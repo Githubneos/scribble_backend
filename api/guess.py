@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 from datetime import datetime
+from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, current_app
 
 
 app = Flask(__name__)
 guess_api = Blueprint('guess_api', __name__)
+
 
 
 # In-memory storage for chat logs and user stats
