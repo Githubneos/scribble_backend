@@ -9,6 +9,10 @@ from flask_login import current_user, login_required
 from flask import current_app
 from werkzeug.security import generate_password_hash
 import shutil
+from flask import Flask, request, jsonify, render_template
+from datetime import datetime
+from datetime import datetime
+from flask import Blueprint, request, jsonify, current_app
 
 
 
@@ -26,9 +30,8 @@ from api.nestPost import nestPost_api # Justin added this, custom format for his
 from api.messages_api import messages_api # Adi added this, messages for his website
 from api.carphoto import car_api
 from api.carChat import car_chat_api
-from api.guess import guess_api
-
 from api.vote import vote_api
+from api.guess import guess_api
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -49,6 +52,7 @@ app.register_blueprint(channel_api)
 app.register_blueprint(group_api)
 app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
+app.register_blueprint(guess_api)
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
@@ -226,8 +230,104 @@ def restore_data_command():
     
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
-        
+
+# In-memory storage for chat logs and user stats
+chat_logs = []
+user_stats = {}
+
+def validate_request_data(data, required_keys):
+    """
+    Validate that the request data contains all required keys.
+    :param data: The incoming JSON data
+    :param required_keys: A set of keys that must be present in the data
+    :return: (bool, str) indicating if validation passed and an error message if not
+    """
+    if not isinstance(data, dict):
+        return False, "Request data must be a JSON object."
+    missing_keys = required_keys - data.keys()
+    if missing_keys:
+        return False, f"Missing required keys: {', '.join(missing_keys)}"
+    return True, ""
+
+@app.route('/api/submit_guess', methods=['POST'])
+def save_guess_simple():
+    # Debugging: Log the incoming request
+    print("Incoming request data:", request.json)
+
+    try:
+        # Parse JSON input
+        data = request.json  # Expecting JSON input
+        required_keys = {'user', 'guess', 'is_correct'}
+
+        # Validate input data
+        is_valid, error_message = validate_request_data(data, required_keys)
+        if not is_valid:
+            print("Validation failed:", error_message)  # Debugging
+            return jsonify({"error": error_message}), 400
+
+        # Extract values from the request
+        user = data['user']
+        guess = data['guess']
+        is_correct = data['is_correct']
+
+        # Initialize stats for the user if not present
+        if user not in user_stats:
+            user_stats[user] = {
+                "correct": 0,
+                "wrong": 0,
+                "total_guesses": 0,
+                "guesses": []
+            }
+
+        # Update user stats
+        user_stats[user]["total_guesses"] += 1
+        if is_correct:
+            user_stats[user]["correct"] += 1
+        else:
+            user_stats[user]["wrong"] += 1
+
+        # Append guess details to the user's history
+        user_stats[user]["guesses"].append({
+            "guess": guess,
+            "is_correct": is_correct
+        })
+
+        # Append new guess to global chat logs
+        chat_logs.append({
+            "user": user,
+            "guess": guess,
+            "is_correct": is_correct
+        })
+
+        # Response format
+        response_data = {
+            "User": user,
+            "Stats": {
+                "Correct Guesses": user_stats[user]["correct"],
+                "Wrong Guesses": user_stats[user]["wrong"],
+                "Total Guesses": user_stats[user]["total_guesses"]
+            },
+            "Latest Guess": {
+                "Guess": guess,
+                "Is Correct": is_correct
+            }
+        }
+
+        # Return success response with stats and latest guess
+        return jsonify(response_data), 201
+
+    except KeyError as e:
+        print("KeyError:", str(e))  # Log and handle missing keys
+        return jsonify({"error": f"Missing key: {str(e)}"}), 400
+    except TypeError as e:
+        print("TypeError:", str(e))  # Log and handle type errors
+        return jsonify({"error": f"Type error: {str(e)}"}), 400
+    except Exception as e:
+        # Log unexpected exceptions and provide better debugging info
+        print("General Exception:", str(e))
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
-    app.run(debug=True, host="0.0.0.0", port="5001")
+    app.run(debug=True, host="0.0.0.0", port="8887")
