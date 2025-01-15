@@ -25,6 +25,9 @@ class UserStat(db.Model):
     wrong = db.Column(db.Integer, default=0)
     total_guesses = db.Column(db.Integer, default=0)
 
+def __repr__(self):
+        return f"<User {self.uid}>"
+
 def init_db():
     with app.app_context():
         db.create_all()
