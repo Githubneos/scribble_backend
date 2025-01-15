@@ -83,8 +83,37 @@ def save_drawing():
 
 @app.route('/api/get_drawings', methods=['GET'])
 def get_drawings():
-    """API endpoint to fetch all saved drawings."""
-    return jsonify(drawings)
+    """API endpoint to fetch all saved drawings with enhanced details."""
+    saved_drawings_path = "saved_drawings"
+    drawing_details = []
+
+    # Ensure the directory exists
+    os.makedirs(saved_drawings_path, exist_ok=True)
+
+    # Iterate through saved drawings and collect detailed info
+    for filename in os.listdir(saved_drawings_path):
+        file_path = os.path.join(saved_drawings_path, filename)
+        if os.path.isfile(file_path):
+            file_info = {
+                "filename": filename,
+                "path": file_path,
+                "size_in_bytes": os.path.getsize(file_path),
+                "last_modified": time.ctime(os.path.getmtime(file_path))
+            }
+            drawing_details.append(file_info)
+
+    response = {
+        "status": "success",
+        "total_drawings": len(drawing_details),
+        "drawings": drawing_details
+    }
+
+    # Log for debugging purposes
+    print("Drawings Data:", response)
+
+    return jsonify(response)
+
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -4,14 +4,14 @@ import os
 # Initialize a Flask application
 app = Flask(__name__)
 # It's better to specify allowed origins explicitly rather than using '*'
-
+CORS(app, supports_credentials=True, origins='*')  # Allow all origins (*)
     
 statistics = {
-    "correct_guesses": 0,
-    "wrong_guesses": 0,
+    "correct_guesses": 76,
+    "wrong_guesses": 52,
     "hints_used": 1,
     "total_rounds": 20,
-    "Current_Streak": 3
+    "current_streak": 3
 }
 
 # API endpoint to get statistics
@@ -23,7 +23,6 @@ def get_statistics():
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
     try:
-        breakpoint()
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
