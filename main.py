@@ -38,11 +38,8 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
-<<<<<<< HEAD
 from api.leaderboard_api import leaderboard_api
 from api.competitiors_api import competitors_api
-=======
->>>>>>> 42df6d5 (database stuff)
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -53,14 +50,8 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
-<<<<<<< HEAD
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 from model.competition import initTimerDataTable
-=======
-from model.leaderboard import initLeaderboardTable
-from model.leaderboard import LeaderboardEntry, initLeaderboardTable  # Add to imports section
-
->>>>>>> 42df6d5 (database stuff)
 # server only Views
 
 # register URIs for api endpoints
@@ -73,11 +64,8 @@ app.register_blueprint(group_api)
 app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
-<<<<<<< HEAD
 app.register_blueprint(leaderboard_api)
 app.register_blueprint(competitors_api)
-=======
->>>>>>> 42df6d5 (database stuff)
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
