@@ -39,7 +39,7 @@ from api.leaderboard_api import leaderboard_api
 from api.competition import competitors_api
 
 # database Initialization functions
-from model.stat import Stats
+from model.stat import initStatsDataTable
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
