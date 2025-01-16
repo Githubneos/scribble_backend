@@ -36,14 +36,10 @@ from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
-<<<<<<< HEAD
-from api.competitiors_api import competitors_api
+from api.competition import competitors_api
 
 # database Initialization functions
 from model.stat import Stats
-=======
-# database Initialization functions
->>>>>>> 613eb161a55b9ad9deb55e7ab5c8c60445c4cc40
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
@@ -67,11 +63,8 @@ app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
 app.register_blueprint(leaderboard_api)
-<<<<<<< HEAD
 app.register_blueprint(competitors_api)
 app.register_blueprint(stats_api)
-=======
->>>>>>> 613eb161a55b9ad9deb55e7ab5c8c60445c4cc40
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)

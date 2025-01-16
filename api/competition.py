@@ -4,9 +4,10 @@ import threading
 import time
 import base64
 import os
+from flask import Blueprint, request, jsonify, current_app
 
 app = Flask(__name__)
-
+competitors_api = Blueprint('competitors_api', __name__)
 # Global variables for timer state and drawing storage
 timer_state = {
     "time_remaining": 0,
