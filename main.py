@@ -45,7 +45,14 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts
 from model.vote import Vote, initVotes
 from model.guess import Guess
+<<<<<<< HEAD
 from model.leaderboard import initLeaderboardTable
+=======
+from model.leaderboard import LeaderboardEntry, initLeaderboardTable
+from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+# server only Views
+
+>>>>>>> c49be8fa331ced9e64d6da568410891e4658efb9
 
 # register URIs for api endpoints
 app.register_blueprint(messages_api)
