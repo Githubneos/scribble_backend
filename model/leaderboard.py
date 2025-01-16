@@ -1,19 +1,23 @@
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
 
+
 class LeaderboardEntry(db.Model):
     """LeaderboardEntry Model for storing drawing scores"""
     __tablename__ = 'leaderboard'
+
 
     id = db.Column(db.Integer, primary_key=True)
     profile_name = db.Column(db.String(255), nullable=False)
     drawing_name = db.Column(db.String(255), nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
+
     def __init__(self, profile_name, drawing_name, score):
         self.profile_name = profile_name
         self.drawing_name = drawing_name
         self.score = score
+
 
     def create(self):
         """Add new leaderboard entry"""
@@ -25,6 +29,7 @@ class LeaderboardEntry(db.Model):
             return None
         return self
 
+
     def read(self):
         """Return entry as dictionary"""
         return {
@@ -33,6 +38,7 @@ class LeaderboardEntry(db.Model):
             "score": self.score
         }
 
+
     def update(self, data):
         """Update entry fields"""
         for key, value in data.items():
@@ -40,10 +46,12 @@ class LeaderboardEntry(db.Model):
         db.session.commit()
         return self
 
+
     def delete(self):
         """Remove entry"""
         db.session.delete(self)
         db.session.commit()
+
 
 def initLeaderboardTable():
     """Initialize table with sample data"""
