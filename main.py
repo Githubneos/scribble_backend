@@ -11,7 +11,6 @@ from werkzeug.security import generate_password_hash
 import shutil
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
-from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
@@ -39,7 +38,7 @@ from api.leaderboard_api import leaderboard_api
 from api.competition import competitors_api
 
 # database Initialization functions
-from model.stat import Stats
+from model.stat import initStatsDataTable
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
@@ -341,32 +340,38 @@ def save_guess_simple():
         # Append new guess to global chat logs
         chat_logs.append({
             "user": user,
-            "guess": guess,
-            "is_correct": is_correct
-        })
+"guess": guess,
+"is_correct": is_correct
+})
 
+# Append new guess to global chat logs
+chat_logs.append({
+    "user": user,
+    "guess": guess,
+    "is_correct": is_correct
+})
 
-        # Append new guess to the database
-        new_guess = Guess(user,guess,is_correct
-        )        
-        new_guess.create()
-       
-       
-        # Response format
-        response_data = {
-            "User": user,
-            "Stats": {
-                "Correct Guesses": user_stats[user]["correct"],
-                "Wrong Guesses": user_stats[user]["wrong"],
-                "Total Guesses": user_stats[user]["total_guesses"]
-            },
-            "Latest Guess": {
-                "Guess": guess,
-                "Is Correct": is_correct
-            }
-        }
+# Append new guess to the database
+try:
+    new_guess = Guess(user, guess, is_correct)
+    new_guess.create()
+except Exception as e:
+    print(f"Error saving guess to database: {e}")
+    return jsonify({"error": "Failed to save guess"}), 500
 
-
+# Response format
+response_data = {
+    "User": user,
+    "Stats": {
+        "Correct Guesses": user_stats[user]["correct"],
+        "Wrong Guesses": user_stats[user]["wrong"],
+        "Total Guesses": user_stats[user]["total_guesses"]
+    },
+    "Latest Guess": {
+        "Guess": guess,
+        "Is Correct": is_correct
+    }
+}
         # Return success response with stats and latest guess
         return jsonify(response_data), 201
 
@@ -495,6 +500,3 @@ def update_statistics():
 if __name__ == "__main__":
     # change name for testing
     app.run(debug=True, host="0.0.0.0", port="8887")
-
-
-
