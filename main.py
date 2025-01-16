@@ -21,6 +21,7 @@ from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
+from api.stats import stats_api
 from api.user import user_api 
 from api.pfp import pfp_api
 from api.nestImg import nestImg_api # Justin added this, custom format for his website
@@ -35,7 +36,14 @@ from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
+<<<<<<< HEAD
+from api.competitiors_api import competitors_api
+
 # database Initialization functions
+from model.stat import Stats
+=======
+# database Initialization functions
+>>>>>>> 613eb161a55b9ad9deb55e7ab5c8c60445c4cc40
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
@@ -59,6 +67,11 @@ app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
 app.register_blueprint(leaderboard_api)
+<<<<<<< HEAD
+app.register_blueprint(competitors_api)
+app.register_blueprint(stats_api)
+=======
+>>>>>>> 613eb161a55b9ad9deb55e7ab5c8c60445c4cc40
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
@@ -409,6 +422,35 @@ def competitors_post():
     db.session.commit()
 
     return jsonify({"message": "Competitor added successfully"}), 201
+
+@app.route('/api/statistics', methods=['POST'])
+def update_statistics():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        if 'user_name' not in data:
+            return jsonify({"error": "Missing 'user_name' field."}), 400
+
+        # Append new stat to the database
+        new_stat = Stat(
+            user_name=data['user_name'],
+            correct_guesses=0,
+            wrong_guesses=0,
+            total_rounds=0
+        )
+        new_stat.create()
+
+        return jsonify({
+            "status": "New statistics entry created successfully.",
+            "new_stat": new_stat.read()
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    
+    
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
