@@ -11,7 +11,6 @@ from werkzeug.security import generate_password_hash
 import shutil
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
-from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
@@ -346,8 +345,7 @@ def save_guess_simple():
 
 
         # Append new guess to the database
-        new_guess = Guess(user,guess,is_correct
-        )        
+        new_guess = Guess(user,guess,is_correct)
         new_guess.create()
        
        
