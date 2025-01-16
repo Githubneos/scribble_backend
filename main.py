@@ -13,6 +13,8 @@ from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
+from flask_cors import CORS
+from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
 
 
 
@@ -329,6 +331,17 @@ def save_guess_simple():
         # Log unexpected exceptions and provide better debugging info
         print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+# Initialize leaderboard_db
+leaderboard_db = []  # Define the leaderboard_db here
+
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard_get():
+    return get_leaderboard(leaderboard_db)  # Call the function to get leaderboard entries
+
+@app.route('/api/leaderboard', methods=['POST'])
+def leaderboard_post():
+    return add_leaderboard_entry(leaderboard_db)  # Call the function to add a new entry
 
 # this runs the flask application on the development server
 if __name__ == "__main__":

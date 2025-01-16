@@ -19,8 +19,16 @@ leaderboard_db = [
     }
 ]
 
-@app.route('/api/leaderboard', methods=['POST'])
-def add_leaderboard_entry():
+def get_leaderboard(leaderboard_db):
+    """Retrieve the leaderboard entries."""
+    try:
+        sorted_leaderboard = sorted(leaderboard_db, key=lambda x: x['score'], reverse=True)
+        return jsonify(sorted_leaderboard), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def add_leaderboard_entry(leaderboard_db):
+    """Add a new entry to the leaderboard."""
     try:
         data = request.get_json()
         if not data or 'name' not in data or 'score' not in data:
@@ -44,20 +52,12 @@ def add_leaderboard_entry():
             "drawing_name": drawing_name,
             "score": score
         }
-        leaderboard_db.append(new_entry)
+        leaderboard_db.append(new_entry)  # Append to the shared leaderboard_db
         return jsonify({"message": "Entry added successfully"}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/leaderboard', methods=['GET'])
-def get_leaderboard():
-    try:
-        sorted_leaderboard = sorted(leaderboard_db, key=lambda x: x['score'], reverse=True)
-        return jsonify(sorted_leaderboard), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
+    port = int(os.environ.get("FLASK_RUN_PORT", 4887))
     app.run(host="0.0.0.0", port=port, debug=True)
