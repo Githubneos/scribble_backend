@@ -12,7 +12,7 @@ load_dotenv()
 # Setup of key Flask object (app)
 app = Flask(__name__)
 
-# Initialize Flask-Login objecat
+# Initialize Flask-Login object
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -62,13 +62,6 @@ app.config['SQLALCHEMY_BACKUP_URI'] = backupURI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
-# Register the flashcard API Blueprint
-from api.flashcard_api import flashcard_api  # Import your flashcard API module
-app.register_blueprint(flashcard_api)       # Register the Blueprint
-
-# Initialize the flashcards table
-from model.flashcard import initFlashcards
 
 # Image upload settings 
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # maximum size of uploaded content
