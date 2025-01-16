@@ -526,9 +526,13 @@ def update_statistics():
         new_stat.create()
 
         return jsonify({
-            "status": "New statistics entry created successfully.",
-            "new_stat": new_stat.read()
-        }), 201
+            "status": "Statistics updated successfully.",
+            "current_stats": statistics
+        }), 200
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid data provided. Ensure 'correct' and 'wrong' are integers."}), 400
+
+
 
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
