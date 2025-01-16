@@ -1,12 +1,14 @@
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
-from flask import Blueprint, request, jsonify, g 
+from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS  # Import CORS
 import os
+
 
 app = Flask(__name__)
 leaderboard_api = Blueprint('leaderboard_api', __name__)
 CORS(app)  # Enable CORS for all routes
+
 
 # In-memory database (replace with persistent storage in production)
 leaderboard_db = [
@@ -22,6 +24,7 @@ leaderboard_db = [
     }
 ]
 
+
 def get_leaderboard(leaderboard_db):
     """Retrieve the leaderboard entries."""
     try:
@@ -30,6 +33,7 @@ def get_leaderboard(leaderboard_db):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 def add_leaderboard_entry(leaderboard_db):
     """Add a new entry to the leaderboard."""
     try:
@@ -37,10 +41,12 @@ def add_leaderboard_entry(leaderboard_db):
         if not data or 'name' not in data or 'score' not in data:
             return jsonify({"error": "Missing required fields"}), 400
 
+
         # Split name into profile_name and drawing_name
         name_parts = data['name'].split(' - ', 1)
         profile_name = name_parts[0]
         drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
+
 
         # Validate score
         try:
@@ -50,6 +56,7 @@ def add_leaderboard_entry(leaderboard_db):
         except ValueError:
             return jsonify({"error": "Score must be a valid number"}), 400
 
+
         new_entry = {
             "profile_name": profile_name,
             "drawing_name": drawing_name,
@@ -58,9 +65,12 @@ def add_leaderboard_entry(leaderboard_db):
         leaderboard_db.append(new_entry)  # Append to the shared leaderboard_db
         return jsonify({"message": "Entry added successfully"}), 201
 
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     app.run(host="0.0.0.0", port=port, debug=True)
+
