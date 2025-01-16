@@ -1,5 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
+import requests
 
 class Guess(db.Model):
     """
@@ -61,3 +62,4 @@ def initGuessDataTable():
     with app.app_context():
         db.create_all()
         print("GuessDataTable initialized.")
+

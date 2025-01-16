@@ -3,7 +3,8 @@ from datetime import datetime
 from datetime import datetime
 from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, current_app
-
+from __init__ import app, db
+from model.guess import Guess
 
 app = Flask(__name__)
 guess_api = Blueprint('guess_api', __name__)
@@ -88,6 +89,9 @@ def save_guess():
             "is_correct": is_correct,
             "timestamp": timestamp
         })
+        
+
+        #db.session.add(guess)
 
         # Return success response
         return jsonify({"status": "Guess and stats updated successfully."}), 201

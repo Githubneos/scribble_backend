@@ -45,7 +45,7 @@ from model.channel import Channel, initChannels
 from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
-from model.guess import initGuessDataTable
+from model.guess import Guess
 # server only Views
 
 # register URIs for api endpoints
@@ -304,6 +304,12 @@ def save_guess_simple():
             "is_correct": is_correct
         })
 
+        # Append new guess to the database
+        new_guess = Guess(user,guess,is_correct
+        )        
+        new_guess.create()
+       
+        
         # Response format
         response_data = {
             "User": user,
