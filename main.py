@@ -30,6 +30,7 @@ from api.guess import guess_api
 
 from api.vote import vote_api
 # database Initialization functions
+from model.zachapi import zachapi
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
@@ -230,4 +231,4 @@ app.cli.add_command(custom_cli)
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
-    app.run(debug=True, host="0.0.0.0", port="5001")
+    app.run(debug=True, host="0.0.0.0", port="8887")
