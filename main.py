@@ -18,10 +18,6 @@ from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import
 
 
 
-
-
-
-
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
@@ -39,7 +35,6 @@ from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
-from api.competitiors_api import competitors_api
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -50,7 +45,12 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
+<<<<<<< HEAD
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+=======
+from model.leaderboard import LeaderboardEntry, initLeaderboardTable  # Import the LeaderboardEntry model and init function
+from model.competition import initTimerDataTable
+>>>>>>> 8e50da7f2fc09c8559c4f45289cfd599306ed268
 # server only Views
 
 # register URIs for api endpoints
@@ -64,7 +64,6 @@ app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
 app.register_blueprint(leaderboard_api)
-app.register_blueprint(competitors_api)
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
@@ -177,6 +176,7 @@ def generate_data():
     initPosts()
     initNestPosts()
     initVotes()
+    initLeaderboardTable()  # Add this line
     
 # Backup the old database
 def backup_database(db_uri, backup_uri):
@@ -346,7 +346,18 @@ def save_guess_simple():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 # Initialize leaderboard_db
-leaderboard_db = []  # Define the leaderboard_db here
+leaderboard_db = [
+    {
+        "profile_name": "ArtMaster",
+        "drawing_name": "Sunset Beach",
+        "score": 95
+    },
+    {
+        "profile_name": "PixelPro",
+        "drawing_name": "Mountain Valley",
+        "score": 88
+    }
+    ]  # Define the leaderboard_db here
 
 @app.route('/api/leaderboard', methods=['GET'])
 def leaderboard_get():
@@ -354,7 +365,33 @@ def leaderboard_get():
 
 @app.route('/api/leaderboard', methods=['POST'])
 def leaderboard_post():
-    return add_leaderboard_entry(leaderboard_db)  # Call the function to add a new entry
+    try:
+        data = request.get_json()
+        
+        # Extract data from request
+        name_parts = data['name'].split(' - ', 1)
+        profile_name = name_parts[0]
+        drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
+        score = int(data['score'])
+        
+        # Create new entry for database
+        db_entry = LeaderboardEntry(profile_name, drawing_name, score)
+        if db_entry.create():
+            # Add to in-memory leaderboard only if database save succeeds
+            new_entry = {
+                "profile_name": profile_name,
+                "drawing_name": drawing_name,
+                "score": score
+            }
+            leaderboard_db.append(new_entry)
+            return jsonify({"message": "Entry added successfully"}), 201
+        return jsonify({"error": "Failed to save entry"}), 500
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Add near the bottom of file, before if __name__ == "__main__":
+import sys
 
 Competitor = []
 
