@@ -17,6 +17,7 @@ from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
 
 
+
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
