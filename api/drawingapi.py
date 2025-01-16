@@ -4,12 +4,14 @@ import os
 import base64
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True, origins='*')
 
 
 drawings_dir = "drawings"
 os.makedirs(drawings_dir, exist_ok=True)  
 
 @app.route('/api/save-drawing', methods=['POST'])
+# saves the drawing
 def save_drawing():
     data = request.json
     if not data or 'drawing' not in data:
