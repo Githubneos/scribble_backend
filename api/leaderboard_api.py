@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, g 
-from api.jwt_authorize import token_required
 from flask_cors import CORS  # Import CORS
 import os
 
@@ -63,5 +62,5 @@ def add_leaderboard_entry(leaderboard_db):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 4887))
+    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     app.run(host="0.0.0.0", port=port, debug=True)

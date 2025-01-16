@@ -49,7 +49,11 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
+<<<<<<< HEAD
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+=======
+from model.leaderboard import initLeaderboardTable
+>>>>>>> 13090bc93c28e03270d80bc43ed0c751ec17455d
 # server only Views
 
 # register URIs for api endpoints
@@ -345,6 +349,10 @@ def save_guess_simple():
 
 # Initialize leaderboard_db
 leaderboard_db = []  # Define the leaderboard_db here
+
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard_get():
+    return get_leaderboard(leaderboard_db)  # Call the function to get leaderboard entries
 
 @app.route('/api/leaderboard', methods=['POST'])
 def leaderboard_post():
