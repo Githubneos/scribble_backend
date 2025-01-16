@@ -292,12 +292,10 @@ def save_guess_simple():
     # Debugging: Log the incoming request
     print("Incoming request data:", request.json)
 
-
     try:
         # Parse JSON input
         data = request.json  # Expecting JSON input
         required_keys = {'user', 'guess', 'is_correct'}
-
 
         # Validate input data
         is_valid, error_message = validate_request_data(data, required_keys)
@@ -305,12 +303,10 @@ def save_guess_simple():
             print("Validation failed:", error_message)  # Debugging
             return jsonify({"error": error_message}), 400
 
-
         # Extract values from the request
         user = data['user']
         guess = data['guess']
         is_correct = data['is_correct']
-
 
         # Initialize stats for the user if not present
         if user not in user_stats:
@@ -321,7 +317,6 @@ def save_guess_simple():
                 "guesses": []
             }
 
-
         # Update user stats
         user_stats[user]["total_guesses"] += 1
         if is_correct:
@@ -329,52 +324,43 @@ def save_guess_simple():
         else:
             user_stats[user]["wrong"] += 1
 
-
         # Append guess details to the user's history
         user_stats[user]["guesses"].append({
             "guess": guess,
             "is_correct": is_correct
         })
 
-
         # Append new guess to global chat logs
         chat_logs.append({
             "user": user,
-"guess": guess,
-"is_correct": is_correct
-})
+            "guess": guess,
+            "is_correct": is_correct
+        })
 
-# Append new guess to global chat logs
-chat_logs.append({
-    "user": user,
-    "guess": guess,
-    "is_correct": is_correct
-})
+        # Append new guess to the database
+        try:
+            new_guess = Guess(user=user, guess=guess, is_correct=is_correct)
+            new_guess.create()
+        except Exception as e:
+            print(f"Error saving guess to database: {e}")
+            return jsonify({"error": "Failed to save guess"}), 500
 
-# Append new guess to the database
-try:
-    new_guess = Guess(user, guess, is_correct)
-    new_guess.create()
-except Exception as e:
-    print(f"Error saving guess to database: {e}")
-    return jsonify({"error": "Failed to save guess"}), 500
+        # Response format
+        response_data = {
+            "User": user,
+            "Stats": {
+                "Correct Guesses": user_stats[user]["correct"],
+                "Wrong Guesses": user_stats[user]["wrong"],
+                "Total Guesses": user_stats[user]["total_guesses"]
+            },
+            "Latest Guess": {
+                "Guess": guess,
+                "Is Correct": is_correct
+            }
+        }
 
-# Response format
-response_data = {
-    "User": user,
-    "Stats": {
-        "Correct Guesses": user_stats[user]["correct"],
-        "Wrong Guesses": user_stats[user]["wrong"],
-        "Total Guesses": user_stats[user]["total_guesses"]
-    },
-    "Latest Guess": {
-        "Guess": guess,
-        "Is Correct": is_correct
-    }
-}
         # Return success response with stats and latest guess
         return jsonify(response_data), 201
-
 
     except KeyError as e:
         print("KeyError:", str(e))  # Log and handle missing keys
@@ -386,7 +372,6 @@ response_data = {
         # Log unexpected exceptions and provide better debugging info
         print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
 
 # Initialize leaderboard_db
 leaderboard_db = [
