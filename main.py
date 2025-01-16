@@ -18,29 +18,11 @@ from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import
 
 
 
-<<<<<<< HEAD
-
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> 0037e53e6bedba1b273b73e16195a18c52385821
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects
 # API endpoints
-<<<<<<< HEAD
-from api.user import user_api
-=======
 from api.stats import stats_api
 from api.user import user_api 
->>>>>>> 0037e53e6bedba1b273b73e16195a18c52385821
 from api.pfp import pfp_api
 from api.nestImg import nestImg_api # Justin added this, custom format for his website
 from api.post import post_api
@@ -54,11 +36,7 @@ from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
-<<<<<<< HEAD
-from api.competitiors_api import competitors_api
-=======
 from api.competition import competitors_api
->>>>>>> 8c6041bc5cac2bf197f429f432870f6d2152947f
 
 # database Initialization functions
 from model.stat import Stats
@@ -483,8 +461,6 @@ def competitors_post():
 
     return jsonify({"message": "Competitor added successfully"}), 201
 
-<<<<<<< HEAD
-=======
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
     try:
@@ -513,7 +489,6 @@ def update_statistics():
 
     
     
->>>>>>> 0037e53e6bedba1b273b73e16195a18c52385821
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
