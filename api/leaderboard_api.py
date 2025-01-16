@@ -1,8 +1,7 @@
 from flask import Flask, jsonify, request
-from datetime import datetime
-from datetime import datetime
 from flask_restful import Api, Resource
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, g 
+from api.jwt_authorize import token_required
 from flask_cors import CORS  # Import CORS
 import os
 
