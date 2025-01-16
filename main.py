@@ -50,7 +50,7 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
-from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+from model.leaderboard import LeaderboardEntry, initLeaderboardTable  # Import the LeaderboardEntry model and init function
 from model.competition import initTimerDataTable
 # server only Views
 
@@ -376,21 +376,18 @@ def leaderboard_post():
         drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
         score = int(data['score'])
         
-        # Create new entry for in-memory db
-        new_entry = {
-            "profile_name": profile_name,
-            "drawing_name": drawing_name,
-            "score": score
-        }
-        
-        # Save to SQL database
+        # Create new entry for database
         db_entry = LeaderboardEntry(profile_name, drawing_name, score)
-        db_entry.create()
-        
-        # Add to in-memory leaderboard
-        leaderboard_db.append(new_entry)
-        
-        return jsonify({"message": "Entry added successfully"}), 201
+        if db_entry.create():
+            # Add to in-memory leaderboard only if database save succeeds
+            new_entry = {
+                "profile_name": profile_name,
+                "drawing_name": drawing_name,
+                "score": score
+            }
+            leaderboard_db.append(new_entry)
+            return jsonify({"message": "Entry added successfully"}), 201
+        return jsonify({"error": "Failed to save entry"}), 500
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
