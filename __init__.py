@@ -12,7 +12,7 @@ load_dotenv()
 # Setup of key Flask object (app)
 app = Flask(__name__)
 
-# Initialize Flask-Login object
+# Initialize Flask-Login objecat
 login_manager = LoginManager()
 login_manager.init_app(app)
 
