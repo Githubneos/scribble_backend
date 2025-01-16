@@ -50,8 +50,8 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
-<<<<<<< HEAD
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+from model.competition import initTimerDataTable
 # server only Views
 
 # register URIs for api endpoints
