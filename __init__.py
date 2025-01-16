@@ -63,6 +63,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+# Register the flashcard API Blueprint
+from api.flashcard_api import flashcard_api  # Import your flashcard API module
+app.register_blueprint(flashcard_api)       # Register the Blueprint
+
+# Initialize the flashcards table
+from model.flashcard import initFlashcards
+
 # Image upload settings 
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # maximum size of uploaded content
 app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.gif']  # supported file types
