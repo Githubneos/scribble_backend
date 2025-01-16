@@ -1,11 +1,16 @@
 from flask import Flask, request, jsonify
+from flask_restful import Api, Resource
+from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
 import os
 # Initialize a Flask application
 app = Flask(__name__)
 # It's better to specify allowed origins explicitly rather than using '*'
-CORS(app, supports_credentials=True, origins='*')  # Allow all origins (*)
-    
+
+stats_api = Blueprint('stats_api', __name__)
+
+
+
 statistics = {
     "correct_guesses": 76,
     "wrong_guesses": 52,
