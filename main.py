@@ -339,31 +339,38 @@ def save_guess_simple():
         # Append new guess to global chat logs
         chat_logs.append({
             "user": user,
-            "guess": guess,
-            "is_correct": is_correct
-        })
+"guess": guess,
+"is_correct": is_correct
+})
 
+# Append new guess to global chat logs
+chat_logs.append({
+    "user": user,
+    "guess": guess,
+    "is_correct": is_correct
+})
 
-        # Append new guess to the database
-        new_guess = Guess(user,guess,is_correct)
-        new_guess.create()
-       
-       
-        # Response format
-        response_data = {
-            "User": user,
-            "Stats": {
-                "Correct Guesses": user_stats[user]["correct"],
-                "Wrong Guesses": user_stats[user]["wrong"],
-                "Total Guesses": user_stats[user]["total_guesses"]
-            },
-            "Latest Guess": {
-                "Guess": guess,
-                "Is Correct": is_correct
-            }
-        }
+# Append new guess to the database
+try:
+    new_guess = Guess(user, guess, is_correct)
+    new_guess.create()
+except Exception as e:
+    print(f"Error saving guess to database: {e}")
+    return jsonify({"error": "Failed to save guess"}), 500
 
-
+# Response format
+response_data = {
+    "User": user,
+    "Stats": {
+        "Correct Guesses": user_stats[user]["correct"],
+        "Wrong Guesses": user_stats[user]["wrong"],
+        "Total Guesses": user_stats[user]["total_guesses"]
+    },
+    "Latest Guess": {
+        "Guess": guess,
+        "Is Correct": is_correct
+    }
+}
         # Return success response with stats and latest guess
         return jsonify(response_data), 201
 
