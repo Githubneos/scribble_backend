@@ -68,5 +68,5 @@ class LeaderboardEntry(db.Model):
 def initLeaderboardTable():
     """Initialize the leaderboard table by creating the database table."""
     with app.app_context():
-        db.create_all()  # This will create all tables
+        db.create_all()  # This will create all tables, including leaderboard
         print("Leaderboard table initialized.")
