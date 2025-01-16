@@ -39,6 +39,7 @@ from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
+from api.competitiors_api import competitors_api
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -49,6 +50,7 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import Guess
+<<<<<<< HEAD
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 # server only Views
 
@@ -63,6 +65,7 @@ app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
 app.register_blueprint(leaderboard_api)
+app.register_blueprint(competitors_api)
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
 app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
@@ -353,6 +356,28 @@ def leaderboard_get():
 @app.route('/api/leaderboard', methods=['POST'])
 def leaderboard_post():
     return add_leaderboard_entry(leaderboard_db)  # Call the function to add a new entry
+
+Competitor = []
+
+@app.route('/api/competitors', methods=['POST'])
+def competitors_post():
+    data = request.json
+    required_keys = {'name', 'time'}
+
+    # Validate input data
+    is_valid, error_message = validate_request_data(data, required_keys)
+    if not is_valid:
+        return jsonify({"error": error_message}), 400
+
+    name = data['name']
+    time = data['time']
+
+    # Add the competitor to the database
+    new_competitor = Competitor(name=name, time=time)
+    db.session.add(new_competitor)
+    db.session.commit()
+
+    return jsonify({"message": "Competitor added successfully"}), 201
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
