@@ -14,7 +14,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
-
+from flask import g
 
 
 # import "objects" from "this" project
@@ -38,8 +38,8 @@ from api.leaderboard_api import leaderboard_api
 from api.competition import competitors_api
 
 # database Initialization functions
-from model import stat
-from model.stat import initStatsDataTable
+from model.leaderboard import LeaderboardEntry
+from model.statistics_hiroshi import Stats, initStatsDataTable
 from model.carChat import CarChat
 from model.user import User, initUsers
 from model.section import Section, initSections
@@ -388,58 +388,46 @@ def save_guess_simple():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-# Initialize leaderboard_db
-leaderboard_db = [
-    {
-        "profile_name": "ArtMaster",
-        "drawing_name": "Sunset Beach",
-        "score": 95
-    },
-    {
-        "profile_name": "PixelPro",
-        "drawing_name": "Mountain Valley",
-        "score": 88
-    }
-    ]  # Define the leaderboard_db here
-
-
 @app.route('/api/leaderboard', methods=['GET'])
 def leaderboard_get():
-    return get_leaderboard(leaderboard_db)  # Call the function to get leaderboard entries
-
+    try:
+        entries = LeaderboardEntry.query.order_by(LeaderboardEntry.score.desc()).all()
+        leaderboard_data = [{
+            "profile_name": entry.profile_name,
+            "drawing_name": entry.drawing_name,
+            "score": entry.score
+        } for entry in entries]
+        return jsonify(leaderboard_data), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch leaderboard: {str(e)}"}), 500
 
 @app.route('/api/leaderboard', methods=['POST'])
 def leaderboard_post():
     try:
         data = request.get_json()
-       
-        # Extract data from request
+        if not data or 'name' not in data or 'score' not in data:
+            return jsonify({"error": "Missing required fields"}), 400
+        
         name_parts = data['name'].split(' - ', 1)
         profile_name = name_parts[0]
         drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
         score = int(data['score'])
-       
-        # Create new entry for database
-        db_entry = LeaderboardEntry(profile_name, drawing_name, score)
-        if db_entry.create():
-            # Add to in-memory leaderboard only if database save succeeds
-            new_entry = {
-                "profile_name": profile_name,
-                "drawing_name": drawing_name,
-                "score": score
-            }
-            leaderboard_db.append(new_entry)
-            return jsonify({"message": "Entry added successfully"}), 201
-        return jsonify({"error": "Failed to save entry"}), 500
-       
+        
+        entry = LeaderboardEntry(profile_name=profile_name, 
+                               drawing_name=drawing_name, 
+                               score=score)
+        db.session.add(entry)
+        db.session.commit()
+        
+        return jsonify({"message": "Entry added successfully"}), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        db.session.rollback()
+        return jsonify({"error": f"Failed to add entry: {str(e)}"}), 500
 
 
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
-<<<<<<< HEAD
 
 Competitor = []
 
@@ -467,84 +455,55 @@ def competitors_post():
 
 
     return jsonify({"message": "Competitor added successfully"}), 201
-=======
-# Add near the bottom of file, before if __name__ == "__main__":
-from model.competition import Time
-
-@app.route('/api/times', methods=['GET'])
-def get_times():
-    times = Time.query.all()
-    times_list = [time.read() for time in times]
-    return jsonify(times_list), 200
-
-@app.route('/api/times', methods=['POST'])
-def add_time():
-    data = request.json
-    users_name = data.get('users_name')
-    timer = data.get('timer')
-    amount_drawn = data.get('amount_drawn')
-
-    if not users_name or not timer or not amount_drawn:
-        return jsonify({"error": "Missing data"}), 400
-
-    new_time = Time(users_name=users_name, timer=timer, amount_drawn=amount_drawn)
-    db.session.add(new_time)
-    db.session.commit()
-
-    return jsonify({"message": "Time entry added successfully"}), 201
-
-def init_db():
-    with app.app_context():
-        db.create_all()
-        if not Time.query.first():
-            initial_times = [
-                Time(users_name="Alice", timer="10:00", amount_drawn=5),
-                Time(users_name="Bob", timer="15:00", amount_drawn=3),
-                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
-            ]
-            for time_entry in initial_times:
-                db.session.add(time_entry)
-            db.session.commit()
->>>>>>> e36bf81bc11df38064384ba020e1808175391e44
 
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        if 'user_name' not in data:
-            return jsonify({"error": "Missing 'user_name' field."}), 400
+        if not data or 'user_name' not in data:
+            return jsonify({"error": "Missing user_name field"}), 400
 
-        # Append new stat to the database
-        new_stat = stat(
-            user_name=data['user_name'],
-            correct_guesses=0,
-            wrong_guesses=0,
-            total_rounds=0
-        )
-        new_stat.create()
-
+        # Find existing stats or create new
+        stats = Stats.query.filter_by(user_name=data['user_name']).first()
+        if not stats:
+            stats = Stats(user_name=data['user_name'])
+            db.session.add(stats)
+        
+        # Update stats if correct/wrong provided
+        if 'correct' in data:
+            stats.update(correct_increment=data['correct'])
+        if 'wrong' in data:
+            stats.update(wrong_increment=data['wrong'])
+            
+        db.session.commit()
+        
         return jsonify({
-            "status": "Statistics updated successfully.",
-            "current_stats": statistics
+            "message": "Statistics updated successfully",
+            "stats": stats.read()
         }), 200
-    except (ValueError, TypeError):
-        return jsonify({"error": "Invalid data provided. Ensure 'correct' and 'wrong' are integers."}), 400
-
-
-
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update statistics: {str(e)}"}), 500
 
-    
+
+# Add initialization at app startup
+_is_initialized = False
+
+@app.before_request
+def initialize_tables():
+    global _is_initialized
+    if not _is_initialized:
+        try:
+            with app.app_context():
+                initStatsDataTable()
+                db.create_all()
+                _is_initialized = True
+        except Exception as e:
+            app.logger.error(f"Error initializing tables: {str(e)}")
+            return jsonify({"error": "Database initialization failed"}), 500
     
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
-<<<<<<< HEAD
     # change name for testing
-=======
-    init_db()
->>>>>>> e36bf81bc11df38064384ba020e1808175391e44
     app.run(debug=True, host="0.0.0.0", port="8887")
