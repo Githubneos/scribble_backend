@@ -382,24 +382,43 @@ def leaderboard_post():
 
 import sys
 
-Competitor = []
+# Add near the bottom of file, before if __name__ == "__main__":
+from model.competition import Time
 
-@app.route('/api/competitors', methods=['POST'])
-def competitors_post():
+@app.route('/api/times', methods=['GET'])
+def get_times():
+    times = Time.query.all()
+    times_list = [time.read() for time in times]
+    return jsonify(times_list), 200
+
+@app.route('/api/times', methods=['POST'])
+def add_time():
     data = request.json
-    required_keys = {'name', 'time'}
-    is_valid, error_message = validate_request_data(data, required_keys)
-    if not is_valid:
-        return jsonify({"error": error_message}), 400
+    users_name = data.get('users_name')
+    timer = data.get('timer')
+    amount_drawn = data.get('amount_drawn')
 
-    name = data['name']
-    time = data['time']
+    if not users_name or not timer or not amount_drawn:
+        return jsonify({"error": "Missing data"}), 400
 
-    new_competitor = Competitor(name=name, time=time)
-    db.session.add(new_competitor)
+    new_time = Time(users_name=users_name, timer=timer, amount_drawn=amount_drawn)
+    db.session.add(new_time)
     db.session.commit()
 
-    return jsonify({"message": "Competitor added successfully"}), 201
+    return jsonify({"message": "Time entry added successfully"}), 201
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+        if not Time.query.first():
+            initial_times = [
+                Time(users_name="Alice", timer="10:00", amount_drawn=5),
+                Time(users_name="Bob", timer="15:00", amount_drawn=3),
+                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
+            ]
+            for time_entry in initial_times:
+                db.session.add(time_entry)
+            db.session.commit()
 
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
@@ -427,4 +446,5 @@ def update_statistics():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True, host="0.0.0.0", port="8887")
