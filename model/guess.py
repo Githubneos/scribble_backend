@@ -1,7 +1,10 @@
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
 import requests
+from sqlalchemy.orm import sessionmaker
+from flask_sqlalchemy import SQLAlchemy
 
+#db = SQLAlchemy()
 class Guess(db.Model):
     """
     GuessDataTable Model
@@ -23,6 +26,7 @@ class Guess(db.Model):
         self.guesser_name = guesser_name
         self.guess = guess
         self.is_correct = is_correct
+
 
     def create(self):
         """
