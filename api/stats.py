@@ -3,48 +3,65 @@ from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
 import os
+from __init__ import db
+from model.statistics_hiroshi import Stats
+
+
 # Initialize a Flask application
 app = Flask(__name__)
+CORS(app)
 # It's better to specify allowed origins explicitly rather than using '*'
 
 stats_api = Blueprint('stats_api', __name__)
+CORS(stats_api)
 
 
-
-statistics = {
-    "correct_guesses": 76,
-    "wrong_guesses": 52,
-    "hints_used": 1,
-    "total_rounds": 20,
-    "current_streak": 3
-}
-
-# API endpoint to get statistics
-@app.route('/api/statistics', methods=['GET'])
+@stats_api.route('/api/statistics', methods=['GET'])
 def get_statistics():
-    return jsonify(statistics)
+    try:
+        # Get the most recent stats entry
+        stats = Stats.query.first()
+        if not stats:
+            # Return default values if no stats exist
+            return jsonify({
+                "correct_guesses": 0,
+                "wrong_guesses": 0,
+                "total_rounds": 0
+            })
+        return jsonify(stats.read())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# API endpoint to update statistics
-@app.route('/api/statistics', methods=['POST'])
+@stats_api.route('/api/statistics', methods=['POST'])
 def update_statistics():
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        correct_value = int(data.get('correct', 0))
-        wrong_value = int(data.get('wrong', 0))
-
-        statistics['correct_guesses'] += correct_value
-        statistics['wrong_guesses'] += wrong_value
-        statistics['total_rounds'] += (correct_value + wrong_value)
-
-        return jsonify({
-            "status": "Statistics updated successfully.",
-            "current_stats": statistics
-        }), 200
-    except (ValueError, TypeError):
-        return jsonify({"error": "Invalid data provided. Ensure 'correct' and 'wrong' are integers."}), 400
+        # Get or create stats entry
+        stats = Stats.query.first()
+        if not stats:
+            stats = Stats(user_name="default")
+            db.session.add(stats)
+            
+        correct = int(data.get('correct', 0))
+        wrong = int(data.get('wrong', 0))
+        
+        if stats.update(correct_increment=correct, wrong_increment=wrong):
+            db.session.commit()
+            return jsonify({
+                "status": "success",
+                "message": "Statistics updated successfully",
+                "current_stats": stats.read()
+            }), 200
+        
+        db.session.rollback()
+        return jsonify({"error": "Failed to update statistics"}), 500
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
