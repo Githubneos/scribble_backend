@@ -439,35 +439,6 @@ def leaderboard_post():
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
-<<<<<<< HEAD
-
-Competitor = []
-
-
-@app.route('/api/competitors', methods=['POST'])
-def competitors_post():
-    data = request.json
-    required_keys = {'name', 'time'}
-
-
-    # Validate input data
-    is_valid, error_message = validate_request_data(data, required_keys)
-    if not is_valid:
-        return jsonify({"error": error_message}), 400
-
-
-    name = data['name']
-    time = data['time']
-
-
-    # Add the competitor to the database
-    new_competitor = Competitor(name=name, time=time)
-    db.session.add(new_competitor)
-    db.session.commit()
-
-
-    return jsonify({"message": "Competitor added successfully"}), 201
-=======
 # Add near the bottom of file, before if __name__ == "__main__":
 from model.competition import Time
 
@@ -505,7 +476,6 @@ def init_db():
             for time_entry in initial_times:
                 db.session.add(time_entry)
             db.session.commit()
->>>>>>> e36bf81bc11df38064384ba020e1808175391e44
 
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
@@ -538,9 +508,5 @@ def update_statistics():
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
-<<<<<<< HEAD
-    # change name for testing
-=======
     init_db()
->>>>>>> e36bf81bc11df38064384ba020e1808175391e44
     app.run(debug=True, host="0.0.0.0", port="8887")
