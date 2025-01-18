@@ -428,7 +428,6 @@ def leaderboard_post():
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
-<<<<<<< HEAD
 # Add near the bottom of file, before if __name__ == "__main__":
 from model.competition import Time
 
@@ -466,35 +465,6 @@ def init_db():
             for time_entry in initial_times:
                 db.session.add(time_entry)
             db.session.commit()
-=======
-
-Competitor = []
-
-
-@app.route('/api/competitors', methods=['POST'])
-def competitors_post():
-    data = request.json
-    required_keys = {'name', 'time'}
-
-
-    # Validate input data
-    is_valid, error_message = validate_request_data(data, required_keys)
-    if not is_valid:
-        return jsonify({"error": error_message}), 400
-
-
-    name = data['name']
-    time = data['time']
-
-
-    # Add the competitor to the database
-    new_competitor = Competitor(name=name, time=time)
-    db.session.add(new_competitor)
-    db.session.commit()
-
-
-    return jsonify({"message": "Competitor added successfully"}), 201
->>>>>>> b5ac231f225cdfec5d529570338099e77b0b1742
 
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
@@ -536,18 +506,15 @@ def initialize_tables():
         try:
             with app.app_context():
                 initStatsDataTable()
+                initLeaderboardTable()  # Add this
                 db.create_all()
                 _is_initialized = True
         except Exception as e:
-            app.logger.error(f"Error initializing tables: {str(e)}")
-            return jsonify({"error": "Database initialization failed"}), 500
+            app.logger.error(f"Error initializing: {str(e)}")
+            return jsonify({"error": "Init failed"}), 500
     
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
-<<<<<<< HEAD
     init_db()
-=======
-    # change name for testing
->>>>>>> b5ac231f225cdfec5d529570338099e77b0b1742
     app.run(debug=True, host="0.0.0.0", port="8887")
