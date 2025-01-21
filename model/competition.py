@@ -39,6 +39,15 @@ class Time(db.Model):
 def init_db():
     with app.app_context():
         db.create_all()
+        if not Time.query.first():
+            initial_times = [
+                Time(users_name="Alice", timer="10:00", amount_drawn=5),
+                Time(users_name="Bob", timer="15:00", amount_drawn=3),
+                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
+            ]
+            for time_entry in initial_times:
+                db.session.add(time_entry)
+            db.session.commit()
 
 def initTimerDataTable():
     with app.app_context():
