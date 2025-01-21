@@ -81,14 +81,11 @@ class Post(db.Model):
             "channel_name": channel.name if channel else None
         }
         return data
-    
-
     def update(self, data):
         """
         Updates the post object with new data.
         Args:
             data (dict): A dictionary containing the new data for the post.
-        
         Returns:
             Post: The updated post object, or None on error.
         """
@@ -149,3 +146,9 @@ def initPosts():
                 '''fails with bad or duplicate data'''
                 db.session.remove()
                 print(f"Records exist, duplicate email, or error: {post._title}")
+
+
+
+
+
+
