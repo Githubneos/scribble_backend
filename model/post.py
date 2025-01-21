@@ -81,20 +81,14 @@ class Post(db.Model):
             "channel_name": channel.name if channel else None
         }
         return data
-<<<<<<< HEAD
-=======
     
 
->>>>>>> 2776a0033371bff93a7827eded191eb82e4e8920
     def update(self, data):
         """
         Updates the post object with new data.
         Args:
             data (dict): A dictionary containing the new data for the post.
-<<<<<<< HEAD
-=======
         
->>>>>>> 2776a0033371bff93a7827eded191eb82e4e8920
         Returns:
             Post: The updated post object, or None on error.
         """
