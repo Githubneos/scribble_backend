@@ -3,11 +3,13 @@ from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS  # Import CORS
 import os
+from model.leaderboard import LeaderboardEntry, db
 
 
 app = Flask(__name__)
 leaderboard_api = Blueprint('leaderboard_api', __name__)
 CORS(app)  # Enable CORS for all routes
+CORS(leaderboard_api)
 
 
 # In-memory database (replace with persistent storage in production)
@@ -25,48 +27,36 @@ leaderboard_db = [
 ]
 
 
-def get_leaderboard(leaderboard_db):
-    """Retrieve the leaderboard entries."""
+@leaderboard_api.route('/api/leaderboard', methods=['GET'])
+def get_leaderboard():
     try:
-        sorted_leaderboard = sorted(leaderboard_db, key=lambda x: x['score'], reverse=True)
-        return jsonify(sorted_leaderboard), 200
+        entries = LeaderboardEntry.query.order_by(
+            LeaderboardEntry.score.desc()
+        ).all()
+        return jsonify([entry.read() for entry in entries]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-def add_leaderboard_entry(leaderboard_db):
-    """Add a new entry to the leaderboard."""
+@leaderboard_api.route('/api/leaderboard', methods=['POST'])
+def add_leaderboard_entry():
     try:
         data = request.get_json()
-        if not data or 'name' not in data or 'score' not in data:
-            return jsonify({"error": "Missing required fields"}), 400
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
 
-
-        # Split name into profile_name and drawing_name
-        name_parts = data['name'].split(' - ', 1)
-        profile_name = name_parts[0]
-        drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
-
-
-        # Validate score
-        try:
-            score = int(data['score'])
-            if score < 0 or score > 100:
-                return jsonify({"error": "Score must be between 0 and 100"}), 400
-        except ValueError:
-            return jsonify({"error": "Score must be a valid number"}), 400
-
-
-        new_entry = {
-            "profile_name": profile_name,
-            "drawing_name": drawing_name,
-            "score": score
-        }
-        leaderboard_db.append(new_entry)  # Append to the shared leaderboard_db
-        return jsonify({"message": "Entry added successfully"}), 201
-
+        entry = LeaderboardEntry(
+            profile_name=data.get('profile_name'),
+            drawing_name=data.get('drawing_name'),
+            score=int(data.get('score', 0))
+        )
+        
+        if entry.create():
+            return jsonify({"message": "Entry added successfully"}), 201
+        return jsonify({"error": "Failed to add entry"}), 400
 
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 
