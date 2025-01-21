@@ -96,54 +96,19 @@ class Post(db.Model):
         return data
     
 
-    def update(self):
+    def update(self, data):
         """
         Updates the post object with new data.
         
         Args:
-            inputs (dict): A dictionary containing the new data for the post.
+            data (dict): A dictionary containing the new data for the post.
         
         Returns:
             Post: The updated post object, or None on error.
         """
-        
-        inputs = Post.query.get(self.id)
-        
-        title = inputs._title
-        content = inputs._content
-        channel_id = inputs._channel_id
-        user_name = User.query.get(inputs._user_id).name if inputs._user_id else None
-        channel_name = Channel.query.get(inputs._channel_id).name if inputs._channel_id else None
-
-        # If channel_name is provided, look up the corresponding channel_id
-        if channel_name:
-            channel = Channel.query.filter_by(_name=channel_name).first()
-            if channel:
-                channel_id = channel.id
-                
-        if user_name:
-            user = User.query.filter_by(_name=user_name).first()
-            if user:
-                user_id = user.id
-            else:
-                return None
-
-        # Update table with new data
-        if title:
-            self._title = title
-        if content:
-            self._content = content
-        if channel_id:
-            self._channel_id = channel_id
-        if user_id:
-            self._user_id = user_id
-
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-            logging.warning(f"IntegrityError: Could not update post with title '{title}' due to missing channel_id.")
-            return None
+        for key, value in data.items():
+            setattr(self, key, value)
+        db.session.commit()
         return self
     
     def delete(self):
