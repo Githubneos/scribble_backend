@@ -421,16 +421,32 @@ def leaderboard_post():
         drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
         score = int(data['score'])
         
-        entry = LeaderboardEntry(profile_name=profile_name, 
-                               drawing_name=drawing_name, 
-                               score=score)
+        # Check for existing entry and update if new score is higher
+        existing_entry = LeaderboardEntry.query.filter_by(
+            profile_name=profile_name,
+            drawing_name=drawing_name
+        ).first()
+        
+        if existing_entry:
+            if score > existing_entry.score:
+                existing_entry.score = score
+                db.session.commit()
+                return jsonify({"message": "Score updated successfully"}), 200
+            return jsonify({"message": "Existing score is higher"}), 200
+            
+        # Create new entry if none exists
+        entry = LeaderboardEntry(
+            profile_name=profile_name,
+            drawing_name=drawing_name,
+            score=score
+        )
         db.session.add(entry)
         db.session.commit()
         
         return jsonify({"message": "Entry added successfully"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": f"Failed to add entry: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to add/update entry: {str(e)}"}), 500
 
 
 # Add near the bottom of file, before if __name__ == "__main__":

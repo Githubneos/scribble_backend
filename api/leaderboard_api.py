@@ -60,6 +60,43 @@ def add_leaderboard_entry():
         return jsonify({"error": str(e)}), 500
 
 
+@leaderboard_api.route('/api/leaderboard', methods=['PUT'])
+def update_leaderboard_entry():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Find existing entry
+        existing_entry = LeaderboardEntry.query.filter_by(
+            profile_name=data.get('profile_name'),
+            drawing_name=data.get('drawing_name')
+        ).first()
+
+        new_score = int(data.get('score', 0))
+
+        # If entry exists, update it regardless of score
+        if existing_entry:
+            existing_entry.score = new_score  # Always update score
+            db.session.commit()
+            return jsonify({"message": "Score updated successfully"}), 200
+
+        # If no existing entry, create new one
+        entry = LeaderboardEntry(
+            profile_name=data.get('profile_name'),
+            drawing_name=data.get('drawing_name'),
+            score=new_score
+        )
+        
+        if entry.create():
+            return jsonify({"message": "New entry created"}), 201
+        return jsonify({"error": "Failed to create entry"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     app.run(host="0.0.0.0", port=port, debug=True)
