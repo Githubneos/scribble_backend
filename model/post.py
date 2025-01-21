@@ -81,20 +81,11 @@ class Post(db.Model):
             "channel_name": channel.name if channel else None
         }
         return data
-<<<<<<< HEAD
-    
-
-=======
->>>>>>> e9513a4 (tt)
     def update(self, data):
         """
         Updates the post object with new data.
         Args:
             data (dict): A dictionary containing the new data for the post.
-<<<<<<< HEAD
-        
-=======
->>>>>>> e9513a4 (tt)
         Returns:
             Post: The updated post object, or None on error.
         """
