@@ -2,10 +2,12 @@ from flask import Flask, request, jsonify, make_response, g
 from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
+from __init__  import app, db
 import threading
 import base64
 import os
 import time
+from model.competition import Time
 
 # Initialize a Flask application
 app = Flask(__name__)
@@ -125,6 +127,28 @@ def get_drawings():
     print("Drawings Data:", response)
 
     return jsonify(response)
+
+@competitors_api.route('/api/times', methods=['GET'])
+def get_times():
+    times = Time.query.all()
+    times_list = [time.read() for time in times]
+    return jsonify(times_list), 200
+
+@competitors_api.route('/api/times', methods=['POST'])
+def add_time():
+    data = request.json
+    users_name = data.get('users_name')
+    timer = data.get('timer')
+    amount_drawn = data.get('amount_drawn')
+
+    if not users_name or not timer or not amount_drawn:
+        return jsonify({"error": "Missing data"}), 400
+
+    new_time = Time(users_name=users_name, timer=timer, amount_drawn=amount_drawn)
+    db.session.add(new_time)
+    db.session.commit()
+
+    return jsonify({"message": "Time entry added successfully"}), 201
 
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
