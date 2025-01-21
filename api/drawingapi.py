@@ -1,47 +1,63 @@
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
-import os
-import base64
+from sqlalchemy.exc import IntegrityError
+from __init__ import app, db
 
-app = Flask(__name__)
-CORS(app, supports_credentials=True, origins='*')
+class Drawing(db.Model):
+    """
+    Drawing Model
 
+    Attributes:
+        id (int): Primary key for the drawing entry.
+        user_name (str): Name of the user who created the drawing.
+        drawing_name (str): Name of the drawing.
+        drawing_data (str): Base64-encoded drawing data.
+    """
+    __tablename__ = 'drawings'
 
-drawings_dir = "drawings"
-os.makedirs(drawings_dir, exist_ok=True)  
+    id = db.Column(db.Integer, primary_key=True)
+    user_name = db.Column(db.String(255), nullable=False)
+    drawing_name = db.Column(db.String(255), nullable=False)
+    drawing_data = db.Column(db.Text, nullable=False)
 
-@app.route('/api/save-drawing', methods=['POST'])
-# saves the drawing
-def save_drawing():
-    data = request.json
-    if not data or 'drawing' not in data:
-        return jsonify({"error": "No drawing data provided"}), 400
+    def __init__(self, user_name, drawing_name, drawing_data):
+        self.user_name = user_name
+        self.drawing_name = drawing_name
+        self.drawing_data = drawing_data
 
-    drawing_data = data['drawing']
-    file_name = data.get('filename', 'drawing.png')
-    file_path = os.path.join(drawings_dir, file_name)
+    def create(self):
+        """
+        Add a new drawing entry to the database.
+        """
+        try:
+            db.session.add(self)
+            db.session.commit()
+            print(f"Drawing Added: {self.user_name} - Drawing: '{self.drawing_name}'")
+        except IntegrityError:
+            db.session.rollback()
+            return None
+        return self
 
-    try:
-     
-        if drawing_data.startswith("data:image"):
-         
-            header, encoded = drawing_data.split(',', 1)
-            decoded_data = base64.b64decode(encoded)
-            
-      
-            with open(file_path, 'wb') as f:
-                f.write(decoded_data)
+    def read(self):
+        """
+        Return the drawing data in dictionary format.
+        """
+        return {
+            "id": self.id,
+            "user_name": self.user_name,
+            "drawing_name": self.drawing_name,
+            "drawing_data": self.drawing_data
+        }
 
-        return jsonify({"message": "Drawing saved successfully", "path": file_path}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    def delete(self):
+        """
+        Delete this drawing entry from the database.
+        """
+        db.session.delete(self)
+        db.session.commit()
 
-
-@app.route('/drawings/<filename>', methods=['GET'])
-def get_drawing(filename):
-    return send_from_directory(drawings_dir, filename)
-
-
-
-if __name__ == '__main__':
-    app.run(port=8887)
+def initDrawingTable():
+    """
+    Initialize the drawings table by creating the database table.
+    """
+    with app.app_context():
+        db.create_all()
+        print("Drawing table initialized.")
