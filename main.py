@@ -53,6 +53,14 @@ from model.leaderboard import LeaderboardEntry, initLeaderboardTable
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 # server only Views
 
+# Add after app creation
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website

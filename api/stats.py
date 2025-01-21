@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
@@ -13,22 +13,26 @@ CORS(app)
 # It's better to specify allowed origins explicitly rather than using '*'
 
 stats_api = Blueprint('stats_api', __name__)
-CORS(stats_api)
+CORS(stats_api, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 
 @stats_api.route('/api/statistics', methods=['GET'])
 def get_statistics():
     try:
-        # Get the most recent stats entry
         stats = Stats.query.first()
         if not stats:
-            # Return default values if no stats exist
             return jsonify({
                 "correct_guesses": 0,
                 "wrong_guesses": 0,
                 "total_rounds": 0
-            })
-        return jsonify(stats.read())
+            }), 200
+        return jsonify(stats.read()), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -39,7 +43,6 @@ def update_statistics():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        # Get or create stats entry
         stats = Stats.query.first()
         if not stats:
             stats = Stats(user_name="default")
