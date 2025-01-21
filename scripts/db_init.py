@@ -29,7 +29,7 @@ import os
 # Add the directory containing main.py to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import application object
-from main import app, db, generate_data, init_db
+from main import app, db, generate_data
 
 # Backup the old database
 def backup_database(db_uri, backup_uri):
@@ -87,5 +87,4 @@ def main():
     print("Database initialized!")
  
 if __name__ == "__main__":
-    init_db()
-    app.run(debug=True, host="0.0.0.0", port="8887")
+    main()

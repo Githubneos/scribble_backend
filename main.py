@@ -428,45 +428,6 @@ def leaderboard_post():
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
-<<<<<<< HEAD
-# Add near the bottom of file, before if __name__ == "__main__":
-from model.competition import Time
-
-@app.route('/api/times', methods=['GET'])
-def get_times():
-    times = Time.query.all()
-    times_list = [time.read() for time in times]
-    return jsonify(times_list), 200
-
-@app.route('/api/times', methods=['POST'])
-def add_time():
-    data = request.json
-    users_name = data.get('users_name')
-    timer = data.get('timer')
-    amount_drawn = data.get('amount_drawn')
-
-    if not users_name or not timer or not amount_drawn:
-        return jsonify({"error": "Missing data"}), 400
-
-    new_time = Time(users_name=users_name, timer=timer, amount_drawn=amount_drawn)
-    db.session.add(new_time)
-    db.session.commit()
-
-    return jsonify({"message": "Time entry added successfully"}), 201
-
-def init_db():
-    with app.app_context():
-        db.create_all()
-        if not Time.query.first():
-            initial_times = [
-                Time(users_name="Alice", timer="10:00", amount_drawn=5),
-                Time(users_name="Bob", timer="15:00", amount_drawn=3),
-                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
-            ]
-            for time_entry in initial_times:
-                db.session.add(time_entry)
-            db.session.commit()
-=======
 
 Competitor = []
 
@@ -494,7 +455,6 @@ def competitors_post():
 
 
     return jsonify({"message": "Competitor added successfully"}), 201
->>>>>>> b5ac231f225cdfec5d529570338099e77b0b1742
 
 @app.route('/api/statistics', methods=['POST'])
 def update_statistics():
@@ -545,9 +505,5 @@ def initialize_tables():
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
-<<<<<<< HEAD
-    init_db()
-=======
     # change name for testing
->>>>>>> b5ac231f225cdfec5d529570338099e77b0b1742
     app.run(debug=True, host="0.0.0.0", port="8887")
