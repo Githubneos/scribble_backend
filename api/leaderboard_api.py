@@ -97,6 +97,25 @@ def update_leaderboard_entry():
         return jsonify({"error": str(e)}), 500
 
 
+@leaderboard_api.route('/api/leaderboard/<profile_name>/<drawing_name>', methods=['DELETE'])
+def delete_leaderboard_entry(profile_name, drawing_name):
+    try:
+        entry = LeaderboardEntry.query.filter_by(
+            profile_name=profile_name,
+            drawing_name=drawing_name
+        ).first()
+        
+        if not entry:
+            return jsonify({"error": "Entry not found"}), 404
+            
+        entry.delete()
+        return jsonify({"message": "Entry deleted successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     app.run(host="0.0.0.0", port=port, debug=True)
