@@ -58,6 +58,20 @@ class LeaderboardEntry(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @classmethod
+    def update_score(cls, profile_name, drawing_name, new_score):
+        """Update score regardless of value"""
+        entry = cls.query.filter_by(
+            profile_name=profile_name,
+            drawing_name=drawing_name
+        ).first()
+        
+        if entry:
+            entry.score = new_score  # Always update score
+            db.session.commit()
+            return True
+        return False
+
 # Database initialization function
 # Creates table and populates with sample data if empty
 def initLeaderboardTable():

@@ -6,9 +6,7 @@ import os
 from model.leaderboard import LeaderboardEntry, db
 
 
-app = Flask(__name__)
 leaderboard_api = Blueprint('leaderboard_api', __name__)
-CORS(app)  # Enable CORS for all routes
 CORS(leaderboard_api)
 
 
@@ -60,7 +58,87 @@ def add_leaderboard_entry():
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
-    app.run(host="0.0.0.0", port=port, debug=True)
+@leaderboard_api.route('/api/leaderboard', methods=['PUT'])
+def update_leaderboard_entry():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Find existing entry
+        existing_entry = LeaderboardEntry.query.filter_by(
+            profile_name=data.get('profile_name'),
+            drawing_name=data.get('drawing_name')
+        ).first()
+
+        new_score = int(data.get('score', 0))
+
+        # If entry exists, update it regardless of score
+        if existing_entry:
+            existing_entry.score = new_score  # Always update score
+            db.session.commit()
+            return jsonify({"message": "Score updated successfully"}), 200
+
+        # If no existing entry, create new one
+        entry = LeaderboardEntry(
+            profile_name=data.get('profile_name'),
+            drawing_name=data.get('drawing_name'),
+            score=new_score
+        )
+        
+        if entry.create():
+            return jsonify({"message": "New entry created"}), 201
+        return jsonify({"error": "Failed to create entry"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@leaderboard_api.route('/api/leaderboard/<profile_name>/<drawing_name>', methods=['DELETE'])
+def delete_leaderboard_entry(profile_name, drawing_name):
+    try:
+        entry = LeaderboardEntry.query.filter_by(
+            profile_name=profile_name,
+            drawing_name=drawing_name
+        ).first()
+        
+        if not entry:
+            return jsonify({"error": "Entry not found"}), 404
+            
+        entry.delete()
+        return jsonify({"message": "Entry deleted successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@leaderboard_api.route('/api/leaderboard', methods=['DELETE'])
+def delete_entry():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        profile_name = data.get('profile_name')
+        drawing_name = data.get('drawing_name')
+
+        if not profile_name or not drawing_name:
+            return jsonify({"error": "Missing profile_name or drawing_name"}), 400
+
+        entry = LeaderboardEntry.query.filter_by(
+            profile_name=profile_name,
+            drawing_name=drawing_name
+        ).first()
+
+        if not entry:
+            return jsonify({"error": "Entry not found"}), 404
+
+        entry.delete()
+        return jsonify({"message": "Entry deleted successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
