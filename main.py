@@ -48,7 +48,7 @@ from model.channel import Channel, initChannels
 from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
-from model.guess import Guess, initGuessDataTable
+from model.guess import db, Guess, initGuessDataTable
 from model.leaderboard import LeaderboardEntry, initLeaderboardTable
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 # server only Views
@@ -296,6 +296,7 @@ def validate_request_data(data, required_keys):
     return True, ""
 
 
+
 @app.route('/api/submit_guess', methods=['POST'])
 def save_guess_simple():
     try:
@@ -341,9 +342,9 @@ def save_guess_simple():
 
         # Append guess details to the user's history
         user_stats[user]["guesses"].append({
-            "guess": guess,
-            "is_correct": is_correct
-        })
+                "guess": guess,
+                "is_correct": is_correct
+            })
 
         # Append new guess to global chat logs
         chat_logs.append({
@@ -354,18 +355,14 @@ def save_guess_simple():
 
         # Append new guess to the database
         try:
-            # Adjust parameter names based on the actual Guess class definition
             # Initialize the database table
             initGuessDataTable()
             new_guess = Guess(
-                user,guess,is_correct
+                guesser_name=user,
+                guess=guess,
+                is_correct=is_correct
             )
 
-            #new_guess = Guess(
-            #    guesser_name=user,  # Corrected to match the column name
-            #    guess=guess,
-            #    is_correct=is_correct
-            #)
             db.session.add(new_guess)
             db.session.commit()  # Save to the database
             print("Guess saved to database successfully.")  # Debugging
@@ -394,6 +391,102 @@ def save_guess_simple():
         # Log unexpected exceptions and provide detailed debugging information
         print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+@app.route('/api/submit_guess', methods=['GET'])
+def get_guesses():
+    print("GET /api/guesses route was hit")  # Debugging line
+
+    try:
+        # Extract the 'user' query parameter
+        user = request.args.get('user', type=str)
+
+        # If 'user' is provided, return all guesses for that user
+        if user:
+            guesses = Guess.query.filter_by(guesser_name=user).all()  # Fetch guesses for the given user
+            if not guesses:
+                return jsonify({"error": "No guesses found for this user."}), 404
+            # Return all guesses for the specified user
+            return jsonify([guess.read() for guess in guesses]), 200
+
+        # If 'user' is not provided, return an error
+        else:
+            return jsonify({"error": "Please provide the 'user' as a query parameter."}), 400
+
+    except Exception as e:
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+
+
+@app.route('/api/submit_guess', methods=['PUT'])
+def update_guess():
+    try:
+        # Parse JSON payload
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON payload."}), 400
+
+        # Ensure that the required fields are present in the data
+        required_keys = ['user', 'guess', 'is_correct']
+        for key in required_keys:
+            if key not in data:
+                return jsonify({"error": f"Missing required field: {key}"}), 400
+
+        # Get the existing guess by user (or another identifier you prefer)
+        guess = Guess.query.filter_by(guesser_name=data['user']).first()
+        if not guess:
+            return jsonify({"error": "Guess not found for this user."}), 404
+
+        # Update the guess fields
+        guess.guess = data['guess']
+        guess.is_correct = data['is_correct']
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        # Return a success response with the updated guess data
+        return jsonify({
+            "message": "Guess updated successfully.",
+            "updated_data": guess.read()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+
+@app.route('/api/submit_guess', methods=['DELETE'])
+def delete_guess():
+    try:
+        # Parse JSON payload to get the guesser_name and guess
+        data = request.json
+        if not data or 'guesser_name' not in data or 'guess' not in data:
+            return jsonify({"error": "Invalid or missing JSON payload. 'guesser_name' and 'guess' are required."}), 400
+
+        guesser_name = data['guesser_name']
+        guess = data['guess']
+        
+        # Find the guess in the database based on guesser_name and guess
+        guess_entry = Guess.query.filter_by(guesser_name=guesser_name, guess=guess).first()
+        if not guess_entry:
+            return jsonify({"error": "Guess not found."}), 404
+
+        # Delete the guess entry
+        guess_entry.delete()
+        
+        # Commit the deletion to the database
+        db.session.commit()
+
+        return jsonify({"message": f"Guess for user '{guesser_name}' with guess '{guess}' deleted successfully."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+
 
 
 @app.route('/api/leaderboard', methods=['GET'])
