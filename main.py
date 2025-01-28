@@ -57,7 +57,7 @@ from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEnt
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -393,7 +393,6 @@ def save_guess_simple():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-<<<<<<< HEAD
 @app.route('/api/submit_guess', methods=['GET'])
 def get_guesses():
     print("GET /api/guesses route was hit")  # Debugging line
@@ -543,8 +542,6 @@ def leaderboard_post():
         return jsonify({"error": f"Failed to add/update entry: {str(e)}"}), 500
 
 
-=======
->>>>>>> 3be5a40be4498300b6deb45e1b7dec5dbb4b86fc
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
@@ -625,9 +622,9 @@ def initialize_tables():
     if not _is_initialized:
         try:
             with app.app_context():
-                db.create_all()
                 initStatsDataTable()
-                initLeaderboardTable()
+                initLeaderboardTable()  # Add this
+                db.create_all()
                 _is_initialized = True
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")
