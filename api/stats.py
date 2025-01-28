@@ -16,7 +16,7 @@ stats_api = Blueprint('stats_api', __name__)
 CORS(stats_api, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -38,18 +38,15 @@ def get_statistics():
 
 @stats_api.route('/api/statistics', methods=['POST'])
 def update_statistics():
-    """Create or update user stats"""
     try:
         data = request.get_json()
-        print(f"Received data: {data}")  # Debug log
+        print(f"Received data: {data}")
         
         if not data or 'username' not in data:
             return jsonify({"error": "Username required"}), 400
 
-        # Find or create user
         stats = Stats.query.filter_by(user_name=data['username']).first()
         if not stats:
-            # Create new user
             stats = Stats(
                 user_name=data['username'],
                 correct_guesses=int(data.get('correct', 0)),
@@ -57,16 +54,14 @@ def update_statistics():
                 total_rounds=1
             )
             db.session.add(stats)
-            print(f"Created new user: {data['username']}")
         else:
             stats.correct_guesses += int(data.get('correct', 0))
             stats.wrong_guesses += int(data.get('wrong', 0))
             stats.total_rounds += 1
-            print(f"Updated user: {data['username']}")
 
         db.session.commit()
         
-        # Get fresh data for frontend table
+        # Return fresh data including usernames for dropdown
         all_stats = Stats.query.all()
         stats_list = [{
             "username": stat.user_name,
@@ -78,12 +73,10 @@ def update_statistics():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @stats_api.route('/api/statistics/all', methods=['GET'])
 def get_all_statistics():
-    """Get all stats for table display"""
     try:
         all_stats = Stats.query.all()
         stats_list = [{
@@ -93,7 +86,29 @@ def get_all_statistics():
         } for stat in all_stats]
         return jsonify(stats_list), 200
     except Exception as e:
-        print(f"Error fetching stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@stats_api.route('/api/statistics/<username>', methods=['DELETE'])
+def delete_statistics(username):
+    try:
+        stats = Stats.query.filter_by(user_name=username).first()
+        if not stats:
+            return jsonify({"error": "User not found"}), 404
+            
+        db.session.delete(stats)
+        db.session.commit()
+        
+        # Return fresh data for both table and dropdown
+        all_stats = Stats.query.all()
+        stats_list = [{
+            "username": stat.user_name,
+            "correct_guesses": stat.correct_guesses,
+            "wrong_guesses": stat.wrong_guesses
+        } for stat in all_stats]
+        
+        return jsonify(stats_list), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
