@@ -111,6 +111,41 @@ def delete_statistics(username):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+@stats_api.route('/api/statistics/<username>', methods=['PUT'])
+def update_user_statistics(username):
+    try:
+        data = request.get_json()
+        print(f"Updating user {username} with data: {data}")
+
+        stats = Stats.query.filter_by(user_name=username).first()
+        if not stats:
+            return jsonify({"error": "User not found"}), 404
+
+        # Update stats with new values
+        if 'correct' in data:
+            stats.correct_guesses += int(data.get('correct', 0))
+        if 'wrong' in data:
+            stats.wrong_guesses += int(data.get('wrong', 0))
+        stats.total_rounds += 1
+
+        db.session.commit()
+        print(f"Updated stats for user: {username}")
+
+        # Return fresh data for frontend
+        all_stats = Stats.query.all()
+        stats_list = [{
+            "username": stat.user_name,
+            "correct_guesses": stat.correct_guesses,
+            "wrong_guesses": stat.wrong_guesses
+        } for stat in all_stats]
+        
+        return jsonify(stats_list), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
     app.run(host="0.0.0.0", port=port, debug=True)
