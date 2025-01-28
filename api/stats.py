@@ -38,33 +38,63 @@ def get_statistics():
 
 @stats_api.route('/api/statistics', methods=['POST'])
 def update_statistics():
+    """Create or update user stats"""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
+        print(f"Received data: {data}")  # Debug log
+        
+        if not data or 'username' not in data:
+            return jsonify({"error": "Username required"}), 400
 
-        stats = Stats.query.first()
+        # Find or create user
+        stats = Stats.query.filter_by(user_name=data['username']).first()
         if not stats:
-            stats = Stats(user_name="default")
+            # Create new user
+            stats = Stats(
+                user_name=data['username'],
+                correct_guesses=int(data.get('correct', 0)),
+                wrong_guesses=int(data.get('wrong', 0)),
+                total_rounds=1
+            )
             db.session.add(stats)
-            
-        correct = int(data.get('correct', 0))
-        wrong = int(data.get('wrong', 0))
+            print(f"Created new user: {data['username']}")
+        else:
+            stats.correct_guesses += int(data.get('correct', 0))
+            stats.wrong_guesses += int(data.get('wrong', 0))
+            stats.total_rounds += 1
+            print(f"Updated user: {data['username']}")
+
+        db.session.commit()
         
-        if stats.update(correct_increment=correct, wrong_increment=wrong):
-            db.session.commit()
-            return jsonify({
-                "status": "success",
-                "message": "Statistics updated successfully",
-                "current_stats": stats.read()
-            }), 200
+        # Get fresh data for frontend table
+        all_stats = Stats.query.all()
+        stats_list = [{
+            "username": stat.user_name,
+            "correct_guesses": stat.correct_guesses,
+            "wrong_guesses": stat.wrong_guesses
+        } for stat in all_stats]
         
-        db.session.rollback()
-        return jsonify({"error": "Failed to update statistics"}), 500
-            
+        return jsonify(stats_list), 200
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@stats_api.route('/api/statistics/all', methods=['GET'])
+def get_all_statistics():
+    """Get all stats for table display"""
+    try:
+        all_stats = Stats.query.all()
+        stats_list = [{
+            "username": stat.user_name,
+            "correct_guesses": stat.correct_guesses,
+            "wrong_guesses": stat.wrong_guesses
+        } for stat in all_stats]
+        return jsonify(stats_list), 200
+    except Exception as e:
+        print(f"Error fetching stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
