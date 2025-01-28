@@ -28,6 +28,12 @@ class Stats(db.Model):
         self.wrong_guesses = wrong_guesses
         self.total_rounds = total_rounds
 
+    def calculate_win_rate(self) -> float:
+        total = self.correct_guesses + self.wrong_guesses
+        if total == 0:
+            return 0.0
+        return (self.correct_guesses / total) * 100
+
     def create(self) -> Optional['Stats']:
         """
         Add a new stats entry to the database.
@@ -49,11 +55,10 @@ class Stats(db.Model):
             dict: Dictionary containing stats data
         """
         return {
-            "id": self.id,
-            "user_name": self.user_name,
+            "username": self.user_name,
             "correct_guesses": self.correct_guesses,
             "wrong_guesses": self.wrong_guesses,
-            "total_rounds": self.total_rounds
+            "win_rate": self.calculate_win_rate()
         }
 
     def update(self, correct_increment: int = 0, wrong_increment: int = 0) -> bool:
