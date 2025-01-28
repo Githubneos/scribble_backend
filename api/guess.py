@@ -1,3 +1,5 @@
+import base64
+import sqlite3
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 from datetime import datetime
@@ -119,6 +121,58 @@ def get_user_stats(username):
         return jsonify(user_stat), 202
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/save-drawing', methods=['POST'])
+def save_drawing():
+    try:
+        # Debugging: Log the incoming request
+        print("Incoming request data:", request.json)
+
+        # Parse JSON input
+        data = request.json  # Expecting JSON input
+        required_keys = {'user_name', 'drawing_name', 'drawing'}
+
+        # Validate input data
+        missing_keys = required_keys - data.keys()
+        if missing_keys:
+            error_message = f"Missing keys: {', '.join(missing_keys)}"
+            print("Validation failed:", error_message)  # Debugging
+            return jsonify({"error": error_message}), 400
+
+        # Extract values from the request
+        user_name = data['user_name']
+        drawing_name = data['drawing_name']
+        drawing_data = data['drawing']
+        timestamp = datetime.now().isoformat()
+
+        # Decode and save the drawing
+        file_path = f"drawings/{user_name}_{drawing_name}_{timestamp}.jpeg".replace(':', '-')
+        with open(file_path, 'wb') as f:
+            f.write(base64.b64decode(drawing_data.split(',')[1]))
+
+        # Save metadata to the database
+        with sqlite3.connect(sqlite3.DatabaseError) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO drawings (user_name, drawing_name, file_path, timestamp)
+                VALUES (?, ?, ?, ?)
+            ''', (user_name, drawing_name, file_path, timestamp))
+            conn.commit()
+
+        # Return success response
+        return jsonify({"status": "Drawing saved successfully.", "file_path": file_path}), 201
+
+    except KeyError as e:
+        print("KeyError:", str(e))  # Log and handle missing keys
+        return jsonify({"error": f"Missing key: {str(e)}"}), 400
+    except TypeError as e:
+        print("TypeError:", str(e))  # Log and handle type errors
+        return jsonify({"error": f"Type error: {str(e)}"}), 400
+    except Exception as e:
+        # Log unexpected exceptions and provide better debugging info
+        print("General Exception:", str(e))
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 # Run the app on localhost with port 8887
 if __name__ == "__main__":

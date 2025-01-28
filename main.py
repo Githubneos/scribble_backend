@@ -1,6 +1,8 @@
 # imports from flask
+import base64
 import json
 import os
+import sqlite3
 from urllib.parse import urljoin, urlparse
 from flask import abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
 from flask_login import current_user, login_user, logout_user
@@ -36,6 +38,7 @@ from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api
 from api.competition import competitors_api
+from api.drawingapi import drawing_api  # Import the drawing API blueprint
 
 # database Initialization functions
 from model.leaderboard import LeaderboardEntry
@@ -80,6 +83,7 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
+app.register_blueprint(drawing_api)  # Register the drawing API blueprint
 
 
 # Tell Flask-Login the view function name of your login route
@@ -536,8 +540,89 @@ def initialize_tables():
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")
             return jsonify({"error": "Init failed"}), 500
-    
+        
+@app.route('/api/save-drawing', methods=['POST'])
+def save_drawing():
+    try:
+        # Debugging: Log the incoming request
+        print("Incoming request data:", request.json)
 
+        # Parse JSON input
+        data = request.get_json()  # Use get_json() to parse JSON input
+        if not data:
+            print("No JSON data received")
+            return jsonify({"error": "Invalid or missing JSON payload."}), 400
+
+        # Log the received data for debugging
+        print("Received data:", data)
+
+        # Check if the required keys are present
+        if 'drawing' not in data:
+            print("Missing key: drawing")
+            return jsonify({"error": "Missing key: drawing"}), 400
+
+        # Extract values from the request
+        drawing_data = data['drawing']
+        user_name = data.get('user_name', 'default_user')  # Use default value if not provided
+        drawing_name = data.get('drawing_name', 'default_drawing')  # Use default value if not provided
+        timestamp = datetime.now().isoformat()
+
+        # Ensure the drawings directory exists
+        if not os.path.exists('drawings'):
+            os.makedirs('drawings')
+
+        # Decode and save the drawing
+        try:
+            base64_data = drawing_data.split(',')[1]
+            file_path = f"drawings/{user_name}_{drawing_name}_{timestamp}.jpeg".replace(':', '-')
+            with open(file_path, 'wb') as f:
+                f.write(base64.b64decode(base64_data))
+            print(f"Drawing saved to {file_path}")
+        except IndexError:
+            print("Error: Drawing data is not in the expected format")
+            return jsonify({"error": "Drawing data is not in the expected format"}), 400
+        except Exception as e:
+            print(f"Error decoding drawing data: {e}")
+            return jsonify({"error": f"Error decoding drawing data: {e}"}), 400
+
+        # Save metadata to the database
+        try:
+            database_path = current_app.config.get('DATABASE', 'instance/database.db')
+            with sqlite3.connect(database_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS drawings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_name TEXT NOT NULL,
+                        drawing_name TEXT NOT NULL,
+                        file_path TEXT NOT NULL,
+                        timestamp TEXT NOT NULL
+                    )
+                ''')
+                cursor.execute('''
+                    INSERT INTO drawings (user_name, drawing_name, file_path, timestamp)
+                    VALUES (?, ?, ?, ?)
+                ''', (user_name, drawing_name, file_path, timestamp))
+                conn.commit()
+            print("Drawing metadata saved to database")
+        except Exception as e:
+            print(f"Error saving metadata to database: {e}")
+            return jsonify({"error": f"Error saving metadata to database: {e}"}), 500
+
+        # Return success response
+        return jsonify({"status": "Drawing saved successfully.", "file_path": file_path}), 201
+
+    except KeyError as e:
+        print("KeyError:", str(e))  # Log and handle missing keys
+        return jsonify({"error": f"Missing key: {str(e)}"}), 400
+    except TypeError as e:
+        print("TypeError:", str(e))  # Log and handle type errors
+        return jsonify({"error": f"Type error: {str(e)}"}), 400
+    except Exception as e:
+        # Log unexpected exceptions and provide better debugging info
+        print("General Exception:", str(e))
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500       
+        
 # this runs the flask application on the development server
 if __name__ == "__main__":
     init_db()
