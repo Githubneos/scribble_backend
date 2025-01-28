@@ -57,7 +57,7 @@ from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEnt
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -396,59 +396,6 @@ def save_guess_simple():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-@app.route('/api/leaderboard', methods=['GET'])
-def leaderboard_get():
-    try:
-        entries = LeaderboardEntry.query.order_by(LeaderboardEntry.score.desc()).all()
-        leaderboard_data = [{
-            "profile_name": entry.profile_name,
-            "drawing_name": entry.drawing_name,
-            "score": entry.score
-        } for entry in entries]
-        return jsonify(leaderboard_data), 200
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch leaderboard: {str(e)}"}), 500
-
-@app.route('/api/leaderboard', methods=['POST'])
-def leaderboard_post():
-    try:
-        data = request.get_json()
-        if not data or 'name' not in data or 'score' not in data:
-            return jsonify({"error": "Missing required fields"}), 400
-        
-        name_parts = data['name'].split(' - ', 1)
-        profile_name = name_parts[0]
-        drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
-        score = int(data['score'])
-        
-        # Check for existing entry and update if new score is higher
-        existing_entry = LeaderboardEntry.query.filter_by(
-            profile_name=profile_name,
-            drawing_name=drawing_name
-        ).first()
-        
-        if existing_entry:
-            if score > existing_entry.score:
-                existing_entry.score = score
-                db.session.commit()
-                return jsonify({"message": "Score updated successfully"}), 200
-            return jsonify({"message": "Existing score is higher"}), 200
-            
-        # Create new entry if none exists
-        entry = LeaderboardEntry(
-            profile_name=profile_name,
-            drawing_name=drawing_name,
-            score=score
-        )
-        db.session.add(entry)
-        db.session.commit()
-        
-        return jsonify({"message": "Entry added successfully"}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to add/update entry: {str(e)}"}), 500
-
-
 # Add near the bottom of file, before if __name__ == "__main__":
 import sys
 
@@ -529,9 +476,9 @@ def initialize_tables():
     if not _is_initialized:
         try:
             with app.app_context():
-                initStatsDataTable()
-                initLeaderboardTable()  # Add this
                 db.create_all()
+                initStatsDataTable()
+                initLeaderboardTable()
                 _is_initialized = True
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")

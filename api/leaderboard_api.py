@@ -115,8 +115,3 @@ def delete_leaderboard_entry(profile_name, drawing_name):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-
-if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
-    app.run(host="0.0.0.0", port=port, debug=True)
-
