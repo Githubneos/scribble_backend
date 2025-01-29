@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from __init__ import app, db
+from ..app import app, db  # Use correct module path
 
 class Drawing(db.Model):
     """
