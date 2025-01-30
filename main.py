@@ -60,7 +60,7 @@ from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEnt
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -441,7 +441,7 @@ def update_guess():
         new_guess = data['guess']
         is_correct = data['is_correct']
 
-        # Find the existing guess in the database
+        # Find the existing guess in the database using the combination of user and guess
         guess = Guess.query.filter_by(guesser_name=user, guess=new_guess).first()
         if not guess:
             return jsonify({"error": "Guess not found."}), 404
@@ -451,9 +451,9 @@ def update_guess():
         db.session.commit()  # Save changes to the database
 
         response_data = {
-            "User": guess.guesser_name,
-            "Updated Guess": new_guess,
-            "Is Correct": is_correct
+            "user": guess.guesser_name,
+            "guess": guess.guess,
+            "is_correct": guess.is_correct
         }
 
         return jsonify(response_data), 200
@@ -461,6 +461,8 @@ def update_guess():
     except Exception as e:
         print("Error:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
 
 
 @app.route('/api/guesses', methods=['DELETE'])
