@@ -6,7 +6,7 @@ version: '3'
                       env_file:
                               - .env
                       ports:
-                              - "8209:8209"
+                              - "8887:8887"
                       volumes:
                               - ./instance:/instance
                       restart: unless-stopped
