@@ -142,3 +142,16 @@ def delete_entry():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
+@leaderboard_api.route('/api/leaderboard/list', methods=['GET'])
+def list_entries():
+    """Return all leaderboard entries as a list"""
+    try:
+        entries = LeaderboardEntry.list_all()
+        return jsonify({
+            "message": "Entries retrieved successfully",
+            "entries": entries
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

@@ -72,6 +72,16 @@ class LeaderboardEntry(db.Model):
             return True
         return False
 
+    @classmethod
+    def list_all(cls):
+        """Return all entries as a list of dictionaries"""
+        entries = cls.query.all()
+        return [{
+            "profile_name": entry.profile_name,
+            "drawing_name": entry.drawing_name, 
+            "score": entry.score
+        } for entry in entries]
+
 # Database initialization function
 # Creates table and populates with sample data if empty
 def initLeaderboardTable():
