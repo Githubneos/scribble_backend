@@ -1,12 +1,13 @@
 import base64
 import sqlite3
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, g, request, jsonify, render_template
 from datetime import datetime
 from datetime import datetime
 from flask_restful import Api, Resource
 from flask import Blueprint, request, jsonify, current_app
 from __init__ import app, db
-from model.guess import Guess
+from api.jwt_authorize import token_required
+from model.guess import Guess, initGuessDataTable
 
 app = Flask(__name__)
 guess_api = Blueprint('guess_api', __name__)
@@ -173,6 +174,219 @@ def save_drawing():
         # Log unexpected exceptions and provide better debugging info
         print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+    
+    
+    
+    
+class _GuessCRUD(Resource):  # Guess Game API operations for Create, Read, Update, Delete
+    def post(self):  # Create method for submitting a guess
+        """
+        Create a new guess.
+
+        Reads data from the JSON body of the request, validates the input, and creates a new guess in the game database.
+
+        Returns:
+            JSON response with the guess details or an error message.
+        """
+
+        # Read data from JSON body
+        body = request.get_json()
+
+        ''' Avoid garbage in, error checking '''
+        # Validate user and guess details
+        user = body.get('user')
+        guess = body.get('guess')
+        is_correct = body.get('is_correct')
+        if not user or len(user) < 2:
+            return {'message': 'User name is missing or too short'}, 400
+        if not guess or len(guess) < 1:
+            return {'message': 'Guess is missing or too short'}, 400
+        if is_correct is None:
+            return {'message': 'is_correct field is missing'}, 400
+
+        # Validate the guess correctness (e.g., check against the correct answer)
+        if not isinstance(is_correct, bool):
+            return {'message': 'is_correct should be a boolean'}, 400
+
+        # Initialize stats for the user if not present
+        if user not in user_stats:
+            user_stats[user] = {
+                "correct": 0,
+                "wrong": 0,
+                "total_guesses": 0,
+                "guesses": []
+            }
+
+        # Update user stats
+        user_stats[user]["total_guesses"] += 1
+        if is_correct:
+            user_stats[user]["correct"] += 1
+        else:
+            user_stats[user]["wrong"] += 1
+
+        # Append guess details to the user's history
+        user_stats[user]["guesses"].append({
+            "guess": guess,
+            "is_correct": is_correct
+        })
+
+        # Append new guess to global game logs
+        chat_logs.append({
+            "user": user,
+            "guess": guess,
+            "is_correct": is_correct
+        })
+
+        # Add guess to database
+        try:
+            # Initialize the database table for guesses if not already done
+            initGuessDataTable()
+
+            new_guess = Guess(
+                guesser_name=user,
+                guess=guess,
+                is_correct=is_correct
+            )
+            db.session.add(new_guess)
+            db.session.commit()  # Save to the database
+            print("Guess saved to database successfully.")  # Debugging
+        except Exception as e:
+            print(f"Error saving guess to database: {e}")
+            db.session.rollback()  # Rollback on failure
+            return jsonify({"error": "Failed to save guess to database."}), 500
+
+        # Prepare the response with the user's updated stats and the latest guess
+        response_data = {
+            "User": user,
+            "Stats": {
+                "Correct Guesses": user_stats[user]["correct"],
+                "Wrong Guesses": user_stats[user]["wrong"],
+                "Total Guesses": user_stats[user]["total_guesses"]
+            },
+            "Latest Guess": {
+                "Guess": guess,
+                "Is Correct": is_correct
+            }
+        }
+
+        # Return success response with updated stats and guess
+        return jsonify(response_data), 201
+
+    @token_required()
+    def get(self):  # Read method for retrieving all guesses
+        """
+        Retrieve all guesses for the game.
+
+        Retrieves a list of all guesses made by all users in the game.
+
+        Returns:
+            JSON response with a list of guesses.
+        """
+
+        # Retrieve the current user from the token_required authentication check
+        current_user = g.current_user
+
+        """ Query the database to retrieve all guesses """
+        guesses = Guess.query.all()
+
+        # Prepare the response data for each guess
+        json_ready = []
+        for guess in guesses:
+            guess_data = {
+                "user": guess.guesser_name,
+                "guess": guess.guess,
+                "is_correct": guess.is_correct,
+                "timestamp": guess.timestamp
+            }
+
+            # Include extra information depending on user role (admin can see all guesses)
+            if current_user.role == 'Admin' or current_user.id == guess.user_id:
+                guess_data['access'] = 'rw'  # Read-write access control
+            else:
+                guess_data['access'] = 'ro'  # Read-only access control
+
+            json_ready.append(guess_data)
+
+        # Return the list of guesses as a JSON response
+        return jsonify(json_ready)
+
+    @token_required()
+    def put(self):  # Update method for updating a guess
+        """
+        Update a user's guess.
+
+        Retrieves the current user from the token_required authentication check and updates the guess.
+
+        Returns:
+            JSON response with the updated guess details or an error message.
+        """
+
+        # Retrieve the current user from the token_required authentication check
+        current_user = g.current_user
+
+        # Read data from the JSON body of the request
+        body = request.get_json()
+        guess_id = body.get('id')
+        new_guess = body.get('guess')
+        is_correct = body.get('is_correct')
+
+        if not guess_id or not new_guess or is_correct is None:
+            return {'message': 'Missing required fields'}, 400
+
+        # Validate the guess correctness
+        if not isinstance(is_correct, bool):
+            return {'message': 'is_correct must be a boolean'}, 400
+
+        # Find the guess in the database
+        guess = Guess.query.filter_by(id=guess_id).first()
+
+        if not guess:
+            return {'message': 'Guess not found'}, 404
+
+        # Ensure that only the user who made the guess can update it (or admins)
+        if current_user.id != guess.user_id and current_user.role != 'Admin':
+            return {'message': 'Not authorized to update this guess'}, 403
+
+        # Update the guess in the database
+        guess.guess = new_guess
+        guess.is_correct = is_correct
+        db.session.commit()
+
+        # Prepare the response with updated guess data
+        response_data = {
+            "User": guess.guesser_name,
+            "Updated Guess": new_guess,
+            "Is Correct": is_correct
+        }
+
+        return jsonify(response_data)
+
+    @token_required("Admin")
+    def delete(self):  # Delete method for removing a guess
+        """
+        Delete a guess from the database.
+
+        Only accessible by admin users.
+
+        Returns:
+            JSON response with a success message or an error message.
+        """
+
+        body = request.get_json()
+        guess_id = body.get('id')
+
+        # Find the guess in the database
+        guess = Guess.query.filter_by(id=guess_id).first()
+
+        if not guess:
+            return {'message': 'Guess not found'}, 404
+
+        # Delete the guess from the database
+        db.session.delete(guess)
+        db.session.commit()
+
+        return jsonify({"message": f"Deleted guess with ID {guess_id}"}), 204
+
 
 # Run the app on localhost with port 8887
 if __name__ == "__main__":

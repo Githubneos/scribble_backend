@@ -60,7 +60,7 @@ from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEnt
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
 })
@@ -397,98 +397,111 @@ def save_guess_simple():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-@app.route('/api/submit_guess', methods=['GET'])
-def get_guesses():
-    print("GET /api/guesses route was hit")  # Debugging line
-
+@app.route('/api/guesses', methods=['GET'])
+def get_all_guesses():
     try:
-        # Extract the 'user' query parameter
-        user = request.args.get('user', type=str)
+        # Retrieve all guesses from the database
+        guesses = Guess.query.all()
 
-        # If 'user' is provided, return all guesses for that user
-        if user:
-            guesses = Guess.query.filter_by(guesser_name=user).all()  # Fetch guesses for the given user
-            if not guesses:
-                return jsonify({"error": "No guesses found for this user."}), 404
-            # Return all guesses for the specified user
-            return jsonify([guess.read() for guess in guesses]), 200
+        # Prepare the response (removed id and timestamp)
+        guesses_data = []
+        for guess in guesses:
+            guesses_data.append({
+                "user": guess.guesser_name,
+                "guess": guess.guess,
+                "is_correct": guess.is_correct
+                # Removed "id" and "timestamp" fields from the response
+            })
 
-        # If 'user' is not provided, return an error
-        else:
-            return jsonify({"error": "Please provide the 'user' as a query parameter."}), 400
+        return jsonify(guesses_data), 200
 
     except Exception as e:
+        print("General Exception:", str(e))
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+
+@app.route('/api/guesses', methods=['PUT'])
+def update_guess():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON payload."}), 400
+        
+        # Log the received data to make sure the frontend is sending it correctly
+        print("Received data:", data)
+
+        required_keys = ['user', 'guess', 'is_correct']
+        is_valid, error_message = validate_request_data(data, required_keys)
+
+        if not is_valid:
+            return jsonify({"error": error_message}), 400
+
+        user = data['user']
+        new_guess = data['guess']
+        is_correct = data['is_correct']
+
+        # Find the existing guess in the database using the combination of user and guess
+        guess = Guess.query.filter_by(guesser_name=user, guess=new_guess).first()
+        if not guess:
+            return jsonify({"error": "Guess not found."}), 404
+
+        # Update the guess
+        guess.is_correct = is_correct
+        db.session.commit()  # Save changes to the database
+
+        response_data = {
+            "user": guess.guesser_name,
+            "guess": guess.guess,
+            "is_correct": guess.is_correct
+        }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print("Error:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
 
 
-@app.route('/api/submit_guess', methods=['PUT'])
-def update_guess():
+@app.route('/api/guesses', methods=['DELETE'])
+def delete_guess():
     try:
-        # Parse JSON payload
+        # Parse JSON input
         data = request.json
         if not data:
             return jsonify({"error": "Invalid or missing JSON payload."}), 400
 
-        # Ensure that the required fields are present in the data
-        required_keys = ['user', 'guess', 'is_correct']
-        for key in required_keys:
-            if key not in data:
-                return jsonify({"error": f"Missing required field: {key}"}), 400
+        if 'user' not in data or 'guess' not in data:
+            return jsonify({"error": "Missing user or guess."}), 400
 
-        # Get the existing guess by user (or another identifier you prefer)
-        guess = Guess.query.filter_by(guesser_name=data['user']).first()
+        user = data['user']
+        guess_value = data['guess']
+
+        # Debugging log to check the data received
+        print(f"Received DELETE request for guess: {user} - {guess_value}")
+
+        # Find the guess in the database using user and guess
+        guess = Guess.query.filter_by(guesser_name=user, guess=guess_value).first()
         if not guess:
-            return jsonify({"error": "Guess not found for this user."}), 404
-
-        # Update the guess fields
-        guess.guess = data['guess']
-        guess.is_correct = data['is_correct']
-
-        # Commit the changes to the database
-        db.session.commit()
-
-        # Return a success response with the updated guess data
-        return jsonify({
-            "message": "Guess updated successfully.",
-            "updated_data": guess.read()
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-
-
-@app.route('/api/submit_guess', methods=['DELETE'])
-def delete_guess():
-    try:
-        # Parse JSON payload to get the guesser_name and guess
-        data = request.json
-        if not data or 'guesser_name' not in data or 'guess' not in data:
-            return jsonify({"error": "Invalid or missing JSON payload. 'guesser_name' and 'guess' are required."}), 400
-
-        guesser_name = data['guesser_name']
-        guess = data['guess']
-        
-        # Find the guess in the database based on guesser_name and guess
-        guess_entry = Guess.query.filter_by(guesser_name=guesser_name, guess=guess).first()
-        if not guess_entry:
+            print(f"Guess not found for: {user} - {guess_value}")
             return jsonify({"error": "Guess not found."}), 404
 
-        # Delete the guess entry
-        guess_entry.delete()
-        
-        # Commit the deletion to the database
-        db.session.commit()
+        # Debugging log to confirm guess deletion
+        print(f"Deleting guess: {user} - {guess_value}")
 
-        return jsonify({"message": f"Guess for user '{guesser_name}' with guess '{guess}' deleted successfully."}), 200
+        # Delete the guess from the database
+        db.session.delete(guess)
+        db.session.commit()  # Commit the deletion to the database
+
+        # Return success message with 200 status code
+        return jsonify({"message": f"Guess by {user} deleted successfully."}), 200
 
     except Exception as e:
-        db.session.rollback()
+        # Log unexpected exceptions
+        print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
 
 
 
