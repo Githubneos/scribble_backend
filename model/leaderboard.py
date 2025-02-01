@@ -27,10 +27,10 @@ class LeaderboardEntry(db.Model):
         try:
             db.session.add(self)  # Add entry to database session
             db.session.commit()   # Commit changes to database
+            return True
         except IntegrityError:    # Handle database constraints violations
             db.session.rollback() # Rollback on error
-            return None
-        return self
+            return False
 
     # READ operation
     # Converts database entry to dictionary format for API responses
@@ -57,20 +57,7 @@ class LeaderboardEntry(db.Model):
         """Remove entry"""
         db.session.delete(self)
         db.session.commit()
-
-    @classmethod
-    def update_score(cls, profile_name, drawing_name, new_score):
-        """Update score regardless of value"""
-        entry = cls.query.filter_by(
-            profile_name=profile_name,
-            drawing_name=drawing_name
-        ).first()
-        
-        if entry:
-            entry.score = new_score  # Always update score
-            db.session.commit()
-            return True
-        return False
+        return True
 
     @classmethod
     def list_all(cls):

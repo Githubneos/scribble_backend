@@ -175,38 +175,21 @@ def update_leaderboard_entry():
         return jsonify({"error": str(e)}), 500
 
 
-@leaderboard_api.route('/api/leaderboard/<profile_name>/<drawing_name>', methods=['DELETE'])
-def delete_leaderboard_entry(profile_name, drawing_name):
-    try:
-        entry = LeaderboardEntry.query.filter_by(
-            profile_name=profile_name,
-            drawing_name=drawing_name
-        ).first()
-        
-        if not entry:
-            return jsonify({"error": "Entry not found"}), 404
-            
-        entry.delete()
-        return jsonify({"message": "Entry deleted successfully"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
 @leaderboard_api.route('/api/leaderboard', methods=['DELETE'])
 def delete_entry():
     try:
+        # Try to get data from JSON body
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
+        
+        # Get profile_name and drawing_name from either JSON body or URL parameters
+        profile_name = data.get('profile_name') if data else None
+        drawing_name = data.get('drawing_name') if data else None
 
-        profile_name = data.get('profile_name')
-        drawing_name = data.get('drawing_name')
-
+        # Validate input
         if not profile_name or not drawing_name:
             return jsonify({"error": "Missing profile_name or drawing_name"}), 400
 
+        # Find and delete entry
         entry = LeaderboardEntry.query.filter_by(
             profile_name=profile_name,
             drawing_name=drawing_name

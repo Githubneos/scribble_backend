@@ -36,7 +36,7 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
-from api.leaderboard_api import leaderboard_api
+from api.leaderboard_api import leaderboard_api  # Update import
 from api.competition import competitors_api
 from api.drawingapi import drawing_api  # Import the drawing API blueprint
 
@@ -506,57 +506,14 @@ def delete_guess():
 
 
 
-@app.route('/api/leaderboard', methods=['GET'])
-def leaderboard_get():
-    try:
-        entries = LeaderboardEntry.query.order_by(LeaderboardEntry.score.desc()).all()
-        leaderboard_data = [{
-            "profile_name": entry.profile_name,
-            "drawing_name": entry.drawing_name,
-            "score": entry.score
-        } for entry in entries]
-        return jsonify(leaderboard_data), 200
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch leaderboard: {str(e)}"}), 500
+# Remove duplicate leaderboard routes
+# @app.route('/api/leaderboard', methods=['GET'])
+# def leaderboard_get():
+#     ...
 
-@app.route('/api/leaderboard', methods=['POST'])
-def leaderboard_post():
-    try:
-        data = request.get_json()
-        if not data or 'name' not in data or 'score' not in data:
-            return jsonify({"error": "Missing required fields"}), 400
-        
-        name_parts = data['name'].split(' - ', 1)
-        profile_name = name_parts[0]
-        drawing_name = name_parts[1] if len(name_parts) > 1 else "Untitled"
-        score = int(data['score'])
-        
-        # Check for existing entry and update if new score is higher
-        existing_entry = LeaderboardEntry.query.filter_by(
-            profile_name=profile_name,
-            drawing_name=drawing_name
-        ).first()
-        
-        if existing_entry:
-            if score > existing_entry.score:
-                existing_entry.score = score
-                db.session.commit()
-                return jsonify({"message": "Score updated successfully"}), 200
-            return jsonify({"message": "Existing score is higher"}), 200
-            
-        # Create new entry if none exists
-        entry = LeaderboardEntry(
-            profile_name=profile_name,
-            drawing_name=drawing_name,
-            score=score
-        )
-        db.session.add(entry)
-        db.session.commit()
-        
-        return jsonify({"message": "Entry added successfully"}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to add/update entry: {str(e)}"}), 500
+# @app.route('/api/leaderboard', methods=['POST'])
+# def leaderboard_post():
+#     ...
 
 
 # Add near the bottom of file, before if __name__ == "__main__":
@@ -640,7 +597,7 @@ def initialize_tables():
         try:
             with app.app_context():
                 initStatsDataTable()
-                initLeaderboardTable()  # Add this
+                initLeaderboardTable()
                 db.create_all()
                 _is_initialized = True
         except Exception as e:
