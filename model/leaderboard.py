@@ -83,17 +83,8 @@ class LeaderboardEntry(db.Model):
         } for entry in entries]
 
 # Database initialization function
-# Creates table and populates with sample data if empty
 def initLeaderboardTable():
-    """Initialize table with sample data"""
+    """Initialize table"""
     with app.app_context():
         db.create_all()  # Create database tables
-        # Check if table is empty and add sample data
-        if not LeaderboardEntry.query.first():
-            samples = [
-                LeaderboardEntry("ArtMaster", "Sunset Beach", 95),
-                LeaderboardEntry("PixelPro", "Mountain Valley", 88)
-            ]
-            for entry in samples:
-                entry.create()
         print("Leaderboard table initialized.")
