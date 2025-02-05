@@ -10,11 +10,11 @@ FROM docker.io/python:3.11
   RUN pip install --no-cache-dir -r requirements.txt
   RUN pip install gunicorn
 
-  ENV GUNICORN_CMD_ARGS="--workers=1 --bind=0.0.0.0:8209"
+  ENV GUNICORN_CMD_ARGS="--workers=1 --bind=0.0.0.0:8203"
 
   EXPOSE 8209
 
   # Define environment variable
-  ENV FLASK_ENV=production
+  ENV FLASK_ENV=deployment
 
   CMD [ "gunicorn", "main:app" ]

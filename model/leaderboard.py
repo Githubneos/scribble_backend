@@ -27,10 +27,10 @@ class LeaderboardEntry(db.Model):
         try:
             db.session.add(self)  # Add entry to database session
             db.session.commit()   # Commit changes to database
+            return True
         except IntegrityError:    # Handle database constraints violations
             db.session.rollback() # Rollback on error
-            return None
-        return self
+            return False
 
     # READ operation
     # Converts database entry to dictionary format for API responses
@@ -57,33 +57,21 @@ class LeaderboardEntry(db.Model):
         """Remove entry"""
         db.session.delete(self)
         db.session.commit()
+        return True
 
     @classmethod
-    def update_score(cls, profile_name, drawing_name, new_score):
-        """Update score regardless of value"""
-        entry = cls.query.filter_by(
-            profile_name=profile_name,
-            drawing_name=drawing_name
-        ).first()
-        
-        if entry:
-            entry.score = new_score  # Always update score
-            db.session.commit()
-            return True
-        return False
+    def list_all(cls):
+        """Return all entries as a list of dictionaries"""
+        entries = cls.query.all()
+        return [{
+            "profile_name": entry.profile_name,
+            "drawing_name": entry.drawing_name, 
+            "score": entry.score
+        } for entry in entries]
 
 # Database initialization function
-# Creates table and populates with sample data if empty
 def initLeaderboardTable():
-    """Initialize table with sample data"""
+    """Initialize table"""
     with app.app_context():
         db.create_all()  # Create database tables
-        # Check if table is empty and add sample data
-        if not LeaderboardEntry.query.first():
-            samples = [
-                LeaderboardEntry("ArtMaster", "Sunset Beach", 95),
-                LeaderboardEntry("PixelPro", "Mountain Valley", 88)
-            ]
-            for entry in samples:
-                entry.create()
         print("Leaderboard table initialized.")
