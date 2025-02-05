@@ -729,6 +729,16 @@ def save_drawing():
         print("General Exception:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500       
         
+@app.route('/api/get-drawings', methods=['GET'])
+def get_drawings():
+    conn = sqlite3.connect('user_management.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT drawing_name FROM drawing')
+    drawings = cursor.fetchall()
+    conn.close()
+    
+    return jsonify({'drawings': [drawing[0] for drawing in drawings]})
+
 # this runs the flask application on the development server
 if __name__ == "__main__":
     init_db()
