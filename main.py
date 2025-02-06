@@ -17,7 +17,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
 from flask import g
-
+from api.leaderboard_api import leaderboard_api
 
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects
@@ -506,18 +506,7 @@ def delete_guess():
 
 
 
-# Remove duplicate leaderboard routes
-# @app.route('/api/leaderboard', methods=['GET'])
-# def leaderboard_get():
-#     ...
 
-# @app.route('/api/leaderboard', methods=['POST'])
-# def leaderboard_post():
-#     ...
-
-
-# Add near the bottom of file, before if __name__ == "__main__":
-import sys
 
 # Add near the bottom of file, before if __name__ == "__main__":
 from model.competition import Time

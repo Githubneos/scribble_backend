@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS drawing (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_name TEXT,
+    drawing_name TEXT,
+    drawing TEXT
+);
