@@ -386,8 +386,3 @@ class _GuessCRUD(Resource):  # Guess Game API operations for Create, Read, Updat
         db.session.commit()
 
         return jsonify({"message": f"Deleted guess with ID {guess_id}"}), 204
-
-
-# Run the app on localhost with port 8887
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8887)
