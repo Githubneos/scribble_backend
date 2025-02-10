@@ -1,10 +1,10 @@
   server {
       listen 80;
       listen [::]:80;
-      server_name scribble.stu.nighthawkcodingsociety.com;
+      server_name: https://scribble.stu.nighthawkcodingsociety.com;
 
       location / {
-          proxy_pass http://localhost:8203;
+          proxy_pass http://127.0.0.1:8203;
 
           # Preflighted requests
           if ($request_method = OPTIONS) {
