@@ -7,157 +7,139 @@ import threading
 import base64
 import os
 import time
-from model.competition import UserAttempts
+from model.competition import Time
 
 # Initialize a Flask application
 app = Flask(__name__)
 CORS(app)
 
 competitors_api = Blueprint('competitors_api', __name__)
-CORS(competitors_api)
+CORS(competitors_api, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
-class _UserAttemptsCRUD(Resource):
-    def post(self):
-        """Create a new user attempt"""
-        try:
-            data = request.get_json()
-            if not data:
-                return {'message': 'No data provided'}, 400
+# Global variables for timer state and drawing storage
+timer_state = {
+    "time_remaining": 0,
+    "is_active": False
+}
+drawings = []
 
-            new_user_attempt = UserAttempts(
-                user_name=data.get('user_name'),
-                attempts_made=data.get('attempts_made'),
-                time_taken=data.get('time_taken')
-            )
-            
-            db.session.add(new_user_attempt)
-            db.session.commit()
-            return {'message': 'User attempt added successfully'}, 201
+def timer_thread(duration):
+    """Background thread to handle the countdown."""
+    global timer_state
+    timer_state["is_active"] = True
+    timer_state["time_remaining"] = duration
 
-        except Exception as e:
-            db.session.rollback()
-            return {'error': str(e)}, 500
+    while timer_state["time_remaining"] > 0 and timer_state["is_active"]:
+        time.sleep(1)
+        timer_state["time_remaining"] -= 1
 
-    def get(self):
-        """Retrieve all user attempts"""
-        try:
-            users = UserAttempts.query.all()
-            return jsonify([user.read() for user in users]), 200
-        except Exception as e:
-            return {'error': str(e)}, 500
+    timer_state["is_active"] = False
 
-    def put(self):
-        """Update a user attempt"""
-        try:
-            data = request.get_json()
-            if not data:
-                return {'message': 'No data provided'}, 400
+@competitors_api.route('/api/start_timer', methods=['POST'])
+def start_timer():
+    """API endpoint to start the timer."""
+    global timer_state
+    data = request.json
+    duration = data.get("duration")
 
-            user_attempt = UserAttempts.query.get(data.get('user_id'))
-            if not user_attempt:
-                return {'message': 'User attempt not found'}, 404
+    if not duration or not isinstance(duration, int) or duration <= 0:
+        return jsonify({"error": "Invalid duration. Please provide a positive integer."}), 400
 
-            user_attempt.user_name = data.get('user_name', user_attempt.user_name)
-            user_attempt.attempts_made = data.get('attempts_made', user_attempt.attempts_made)
-            user_attempt.time_taken = data.get('time_taken', user_attempt.time_taken)
-            db.session.commit()
-            return {'message': 'User attempt updated successfully'}, 200
+    timer_state["is_active"] = False
+    thread = threading.Thread(target=timer_thread, args=(duration,))
+    thread.start()
 
-        except Exception as e:
-            db.session.rollback()
-            return {'error': str(e)}, 500
+    return jsonify({"message": "Timer started", "duration": duration})
 
-    def delete(self):
-        """Delete a user attempt"""
-        try:
-            data = request.get_json()
-            if not data:
-                return {'message': 'No data provided'}, 400
+@competitors_api.route('/api/timer_status', methods=['GET'])
+def timer_status():
+    """API endpoint to get the current timer status."""
+    return jsonify(timer_state)
 
-            user_attempt = UserAttempts.query.get(data.get('user_id'))
-            if not user_attempt:
-                return {'message': 'User attempt not found'}, 404
+@competitors_api.route('/api/save_drawing', methods=['POST'])
+def save_drawing():
+    data = request.json
+    canvas_data = data.get("canvasData")
 
-            db.session.delete(user_attempt)
-            db.session.commit()
-            return {'message': 'User attempt deleted successfully'}, 200
+    if not canvas_data or not isinstance(canvas_data, str):
+        return jsonify({"error": "Invalid data. Provide a valid Base64-encoded image."}), 400
 
-        except Exception as e:
-            db.session.rollback()
-            return {'error': str(e)}, 500
-
-# Add the resource to the API
-api = Api(competitors_api)
-api.add_resource(_UserAttemptsCRUD, '/api/user_attempts/crud')
-
-@competitors_api.route('/api/user_attempts', methods=['GET'])
-def get_user_attempts():
     try:
-        users = UserAttempts.query.all()
-        return jsonify([user.read() for user in users]), 200
+        header, encoded = canvas_data.split(",", 1)
+        image_data = base64.b64decode(encoded)
+        timestamp = int(time.time())
+        filename = f"drawing_{timestamp}.png"
+        file_path = os.path.join("saved_drawings", filename)
+        os.makedirs("saved_drawings", exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+
+        return jsonify({"message": "Drawing saved on server", "filename": filename})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Failed to save image: {str(e)}"}), 500
 
-@competitors_api.route('/api/user_attempts', methods=['POST'])
-def add_user_attempt():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
+@competitors_api.route('/api/get_drawings', methods=['GET'])
+def get_drawings():
+    """API endpoint to fetch all saved drawings."""
+    saved_drawings_path = "saved_drawings"
+    drawing_details = []
+    os.makedirs(saved_drawings_path, exist_ok=True)
 
-        new_user_attempt = UserAttempts(
-            user_name=data.get('user_name'),
-            attempts_made=data.get('attempts_made'),
-            time_taken=data.get('time_taken')
+    for filename in os.listdir(saved_drawings_path):
+        file_path = os.path.join(saved_drawings_path, filename)
+        if os.path.isfile(file_path):
+            file_info = {
+                "filename": filename,
+                "path": file_path,
+                "size_in_bytes": os.path.getsize(file_path),
+                "last_modified": time.ctime(os.path.getmtime(file_path))
+            }
+            drawing_details.append(file_info)
+
+    return jsonify({"status": "success", "total_drawings": len(drawing_details), "drawings": drawing_details})
+
+@competitors_api.route('/api/times', methods=['GET', 'POST'])
+def manage_times():
+    if request.method == 'GET':
+        times = Time.query.all()
+        return jsonify([time.read() for time in times]), 200
+    
+    if request.method == 'POST':
+        data = request.json
+        new_time = Time(
+            users_name=data.get('users_name'),
+            timer=data.get('timer'),
+            amount_drawn=data.get('amount_drawn')
         )
-        
-        db.session.add(new_user_attempt)
+        db.session.add(new_time)
         db.session.commit()
-        return jsonify({"message": "User attempt added successfully"}), 201
+        return jsonify({"message": "Time entry added successfully"}), 201
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-@competitors_api.route('/api/user_attempts', methods=['PUT'])
-def update_user_attempt():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        user_attempt = UserAttempts.query.get(data.get('user_id'))
-        if not user_attempt:
-            return jsonify({"error": "User attempt not found"}), 404
-
-        user_attempt.user_name = data.get('user_name', user_attempt.user_name)
-        user_attempt.attempts_made = data.get('attempts_made', user_attempt.attempts_made)
-        user_attempt.time_taken = data.get('time_taken', user_attempt.time_taken)
+@competitors_api.route('/api/times/<int:time_id>', methods=['PUT', 'DELETE'])
+def modify_time(time_id):
+    time_entry = Time.query.get(time_id)
+    if not time_entry:
+        return jsonify({"error": "Time entry not found"}), 404
+    
+    if request.method == 'PUT':
+        data = request.json
+        time_entry.users_name = data.get('users_name', time_entry.users_name)
+        time_entry.timer = data.get('timer', time_entry.timer)
+        time_entry.amount_drawn = data.get('amount_drawn', time_entry.amount_drawn)
         db.session.commit()
-        return jsonify({"message": "User attempt updated successfully"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-@competitors_api.route('/api/user_attempts', methods=['DELETE'])
-def delete_user_attempt():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        user_attempt = UserAttempts.query.get(data.get('user_id'))
-        if not user_attempt:
-            return jsonify({"error": "User attempt not found"}), 404
-
-        db.session.delete(user_attempt)
+        return jsonify({"message": "Time entry updated successfully"})
+    
+    if request.method == 'DELETE':
+        db.session.delete(time_entry)
         db.session.commit()
-        return jsonify({"message": "User attempt deleted successfully"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"message": "Time entry deleted successfully"})
 
 if __name__ == '__main__':
     port = int(os.environ.get("FLASK_RUN_PORT", 8887))
