@@ -1,24 +1,24 @@
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
-import requests
-class Time(db.Model):
-    __tablename__ = 'timer_data_table'
+
+class UserAttempts(db.Model):
+    __tablename__ = 'user_attempts'
 
     id = db.Column(db.Integer, primary_key=True)
-    users_name = db.Column(db.String(255), nullable=False)
-    timer = db.Column(db.String(255), nullable=False)
-    amount_drawn = db.Column(db.Integer, nullable=False)
+    user_name = db.Column(db.String(255), nullable=False)
+    attempts_made = db.Column(db.Integer, nullable=False)
+    time_taken = db.Column(db.String(255), nullable=False)
 
-    def __init__(self, users_name, timer, amount_drawn):
-        self.users_name = users_name
-        self.timer = timer
-        self.amount_drawn = amount_drawn
+    def __init__(self, user_name, attempts_made, time_taken):
+        self.user_name = user_name
+        self.attempts_made = attempts_made
+        self.time_taken = time_taken
 
     def create(self):
         try:
             db.session.add(self)
             db.session.commit()
-            print(f"Time Added: {self.users_name} - Timer: '{self.timer}' - Amount Drawn: {self.amount_drawn}")
+            print(f"User Attempt Added: {self.user_name} - Attempts Made: {self.attempts_made} - Time Taken: {self.time_taken}")
         except IntegrityError:
             db.session.rollback()
             return None
@@ -27,9 +27,9 @@ class Time(db.Model):
     def read(self):
         return {
             "id": self.id,
-            "users_name": self.users_name,
-            "timer": self.timer,
-            "amount_drawn": self.amount_drawn
+            "user_name": self.user_name,
+            "attempts_made": self.attempts_made,
+            "time_taken": self.time_taken
         }
 
     def delete(self):
@@ -39,17 +39,17 @@ class Time(db.Model):
 def init_db():
     with app.app_context():
         db.create_all()
-        if not Time.query.first():
-            initial_times = [
-                Time(users_name="Alice", timer="10:00", amount_drawn=5),
-                Time(users_name="Bob", timer="15:00", amount_drawn=3),
-                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
+        if not UserAttempts.query.first():
+            initial_attempts = [
+                UserAttempts(user_name="Alice", attempts_made=5, time_taken="10:00"),
+                UserAttempts(user_name="Bob", attempts_made=3, time_taken="15:00"),
+                UserAttempts(user_name="Charlie", attempts_made=7, time_taken="20:00")
             ]
-            for time_entry in initial_times:
-                db.session.add(time_entry)
+            for attempt in initial_attempts:
+                db.session.add(attempt)
             db.session.commit()
 
-def initTimerDataTable():
+def initUserAttemptsTable():
     with app.app_context():
         db.create_all()
-        print("TimerDataTable initialized.")
+        print("UserAttempts table initialized.")
