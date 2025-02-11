@@ -121,6 +121,6 @@ def modify_time(time_id):
         return jsonify({"message": "Time entry deleted successfully"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 802))
+    port = int(os.environ.get("FLASK_RUN_PORT", 8023))
     app.register_blueprint(competitors_api)
     app.run(host="0.0.0.0", port=port, debug=True)
