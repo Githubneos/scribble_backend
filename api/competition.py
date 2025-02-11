@@ -4,7 +4,6 @@ from flask import Blueprint
 from flask_cors import CORS
 from __init__ import app, db
 import threading
-import base64
 import os
 import time
 from model.competition import Time
@@ -22,12 +21,11 @@ CORS(competitors_api, resources={
     }
 })
 
-# Global variables for timer state and drawing storage
+# Global variables for timer state
 timer_state = {
     "time_remaining": 0,
     "is_active": False
 }
-drawings = []
 
 def timer_thread(duration):
     """Background thread to handle the countdown."""
@@ -62,48 +60,29 @@ def timer_status():
     """API endpoint to get the current timer status."""
     return jsonify(timer_state)
 
-@competitors_api.route('/api/save_drawing', methods=['POST'])
-def save_drawing():
+@competitors_api.route('/api/save_time', methods=['POST'])
+def save_time():
+    """API endpoint to save the time entry."""
     data = request.json
-    canvas_data = data.get("canvasData")
+    users_name = data.get("users_name")
+    timer = data.get("timer")
+    amount_drawn = data.get("amount_drawn")
 
-    if not canvas_data or not isinstance(canvas_data, str):
-        return jsonify({"error": "Invalid data. Provide a valid Base64-encoded image."}), 400
+    if not users_name or not timer or not amount_drawn:
+        return jsonify({"error": "Invalid data. Provide users_name, timer, and amount_drawn."}), 400
 
     try:
-        header, encoded = canvas_data.split(",", 1)
-        image_data = base64.b64decode(encoded)
-        timestamp = int(time.time())
-        filename = f"drawing_{timestamp}.png"
-        file_path = os.path.join("saved_drawings", filename)
-        os.makedirs("saved_drawings", exist_ok=True)
+        new_time = Time(
+            users_name=users_name,
+            timer=timer,
+            amount_drawn=amount_drawn
+        )
+        db.session.add(new_time)
+        db.session.commit()
 
-        with open(file_path, "wb") as f:
-            f.write(image_data)
-
-        return jsonify({"message": "Drawing saved on server", "filename": filename})
+        return jsonify({"message": "Time entry saved successfully"})
     except Exception as e:
-        return jsonify({"error": f"Failed to save image: {str(e)}"}), 500
-
-@competitors_api.route('/api/get_drawings', methods=['GET'])
-def get_drawings():
-    """API endpoint to fetch all saved drawings."""
-    saved_drawings_path = "saved_drawings"
-    drawing_details = []
-    os.makedirs(saved_drawings_path, exist_ok=True)
-
-    for filename in os.listdir(saved_drawings_path):
-        file_path = os.path.join(saved_drawings_path, filename)
-        if os.path.isfile(file_path):
-            file_info = {
-                "filename": filename,
-                "path": file_path,
-                "size_in_bytes": os.path.getsize(file_path),
-                "last_modified": time.ctime(os.path.getmtime(file_path))
-            }
-            drawing_details.append(file_info)
-
-    return jsonify({"status": "success", "total_drawings": len(drawing_details), "drawings": drawing_details})
+        return jsonify({"error": f"Failed to save time entry: {str(e)}"}), 500
 
 @competitors_api.route('/api/times', methods=['GET', 'POST'])
 def manage_times():
@@ -142,6 +121,6 @@ def modify_time(time_id):
         return jsonify({"message": "Time entry deleted successfully"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 8887))
+    port = int(os.environ.get("FLASK_RUN_PORT", 802))
     app.register_blueprint(competitors_api)
     app.run(host="0.0.0.0", port=port, debug=True)
