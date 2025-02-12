@@ -1,5 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
+from sqlalchemy import inspect
 from __init__ import db
 
 class Picture(db.Model):
@@ -40,8 +41,8 @@ class Picture(db.Model):
 def initPictureTable():
     """Create the pictures table if it doesn't exist"""
     try:
-        # Remove db.drop_all()
-        if not db.engine.dialect.has_table(db.engine, 'pictures'):
+        inspector = inspect(db.engine)
+        if not inspector.has_table('pictures'):
             db.create_all()
             print("Picture table created successfully")
         else:
