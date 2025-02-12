@@ -296,6 +296,7 @@ def initialize_tables():
         try:
             with app.app_context():
                 db.create_all()
+                initGuessDataTable()  # Keep this initialization
                 initStatsDataTable()  # Keep this initialization
                 initLeaderboardTable()
                 initPictureTable()

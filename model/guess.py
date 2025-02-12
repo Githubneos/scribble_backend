@@ -14,6 +14,7 @@ class Guess(db.Model):
         guesser_name (str): Name of the guesser.
         guess (str): The guessed value.
         is_correct (bool): Indicates if the guess was correct.
+        created_by (str): Name of the user who created the guess.
     """
     __tablename__ = 'guess_data_table'
 
@@ -21,12 +22,13 @@ class Guess(db.Model):
     guesser_name = db.Column(db.String(255), nullable=False)
     guess = db.Column(db.String(255), nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False)
+    created_by = db.Column(db.String(255), nullable=True)  # Add auth tracking
 
-    def __init__(self, guesser_name, guess, is_correct):
+    def __init__(self, guesser_name, guess, is_correct, created_by=None):
         self.guesser_name = guesser_name
         self.guess = guess
         self.is_correct = is_correct
-
+        self.created_by = created_by
 
     def create(self):
         """
@@ -49,15 +51,21 @@ class Guess(db.Model):
             "id": self.id,
             "guesser_name": self.guesser_name,
             "guess": self.guess,
-            "is_correct": self.is_correct
+            "is_correct": self.is_correct,
+            "created_by": self.created_by
         }
 
     def delete(self):
         """
         Delete this guess entry from the database.
         """
-        db.session.delete(self)
-        db.session.commit()
+        try:
+            db.session.delete(self)
+            db.session.commit()
+            return True
+        except Exception:
+            db.session.rollback()
+            return False
 
 def initGuessDataTable():
     """
