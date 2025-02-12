@@ -1,8 +1,6 @@
 # imports from flask
-import base64
 import json
 import os
-import sqlite3
 from urllib.parse import urljoin, urlparse
 from flask import abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
 from flask_login import current_user, login_user, logout_user
@@ -50,6 +48,8 @@ from model.nestPost import NestPost, initNestPosts # Justin added this, custom f
 from model.vote import Vote, initVotes
 from model.guess import db, Guess, initGuessDataTable
 from model.picture import Picture, initPictureTable  # Update this line
+from model.competition import Time, initTimerTable  # Add this import
+
 # server only Views
 
 # register URIs for api endpoints
@@ -194,7 +194,9 @@ def generate_data():
     initNestPosts()
     initVotes()
     initLeaderboardTable()
-    initStatsDataTable()  # Add this line
+    initStatsDataTable()
+    initTimerTable()
+    initPictureTable()  # Add this line
 
 
 # Backup the old database
@@ -269,23 +271,6 @@ def restore_data_command():
 app.cli.add_command(custom_cli)
 
 
-# Add near the bottom of file, before if __name__ == "__main__":
-from model.competition import Time
-
-def init_db():
-    with app.app_context():
-        db.create_all()
-        if not Time.query.first():
-            initial_times = [
-                Time(users_name="Alice", timer="10:00", amount_drawn=5),
-                Time(users_name="Bob", timer="15:00", amount_drawn=3),
-                Time(users_name="Charlie", timer="20:00", amount_drawn=7)
-            ]
-            for time_entry in initial_times:
-                db.session.add(time_entry)
-            db.session.commit()
-
-
 # Add initialization at app startup
 _is_initialized = False
 
@@ -296,8 +281,10 @@ def initialize_tables():
         try:
             with app.app_context():
                 db.create_all()
-                initGuessDataTable()  # Keep this initialization
-                initStatsDataTable()  # Keep this initialization
+                initPictureTable()  # Keep this initialization
+                initTimerTable()  # Add this initialization
+                initGuessDataTable()
+                initStatsDataTable()
                 initLeaderboardTable()
                 initPictureTable()
                 _is_initialized = True
@@ -307,5 +294,4 @@ def initialize_tables():
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True, host="0.0.0.0", port="8203")
