@@ -34,7 +34,6 @@ from api.vote import vote_api
 from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api  # Update import
 from api.competition import competitors_api
-from api.drawingapi import drawing_api  # Import the drawing API blueprint
 from api.picture import picture_api # Add this import if not present
 from api.leaderboard_api import leaderboard_api
 
@@ -71,7 +70,6 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
-app.register_blueprint(drawing_api)  # Register the drawing API blueprint
 app.register_blueprint(picture_api)
 
 
@@ -196,6 +194,7 @@ def generate_data():
     initNestPosts()
     initVotes()
     initLeaderboardTable()
+    initStatsDataTable()  # Add this line
 
 
 # Backup the old database
@@ -270,258 +269,8 @@ def restore_data_command():
 app.cli.add_command(custom_cli)
 
 
-# In-memory storage for chat logs and user stats
-chat_logs = []
-user_stats = {}
-
-
-def validate_request_data(data, required_keys):
-    """
-    Validate that the request data contains all required keys.
-    :param data: The incoming JSON data
-    :param required_keys: A set of keys that must be present in the data
-    :return: (bool, str) indicating if validation passed and an error message if not
-    """
-    if not isinstance(data, dict):
-        return False, "Request data must be a JSON object."
-    missing_keys = required_keys - data.keys()
-    if missing_keys:
-        return False, f"Missing required keys: {', '.join(missing_keys)}"
-    return True, ""
-
-
-
-@app.route('/api/submit_guess', methods=['POST'])
-def save_guess_simple():
-    try:
-        # Parse JSON input
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid or missing JSON payload."}), 400
-
-        print("Incoming request data:", data)  # Debugging
-
-        required_keys = {'user', 'guess', 'is_correct'}
-        is_valid, error_message = validate_request_data(data, required_keys)
-
-        # Validate input data
-        if not is_valid:
-            print("Validation failed:", error_message)  # Debugging
-            return jsonify({"error": error_message}), 400
-
-        # Extract values from the request
-        user = data['user']
-        guess = data['guess']
-        is_correct = data['is_correct']
-
-        # Ensure the types of the inputs are correct
-        if not isinstance(user, str) or not isinstance(guess, str) or not isinstance(is_correct, bool):
-            return jsonify({"error": "Invalid data types for user, guess, or is_correct."}), 400
-
-        # Initialize stats for the user if not present
-        if user not in user_stats:
-            user_stats[user] = {
-                "correct": 0,
-                "wrong": 0,
-                "total_guesses": 0,
-                "guesses": []
-            }
-
-        # Update user stats
-        user_stats[user]["total_guesses"] += 1
-        if is_correct:
-            user_stats[user]["correct"] += 1
-        else:
-            user_stats[user]["wrong"] += 1
-
-        # Append guess details to the user's history
-        user_stats[user]["guesses"].append({
-                "guess": guess,
-                "is_correct": is_correct
-            })
-
-        # Append new guess to global chat logs
-        chat_logs.append({
-            "user": user,
-            "guess": guess,
-            "is_correct": is_correct
-        })
-
-        # Append new guess to the database
-        try:
-            # Initialize the database table
-            initGuessDataTable()
-            new_guess = Guess(
-                guesser_name=user,
-                guess=guess,
-                is_correct=is_correct
-            )
-
-            db.session.add(new_guess)
-            db.session.commit()  # Save to the database
-            print("Guess saved to database successfully.")  # Debugging
-        except Exception as e:
-            print(f"Error saving guess to database: {e}")
-            db.session.rollback()  # Roll back the transaction on failure
-            return jsonify({"error": "Failed to save guess to database."}), 500
-
-        # Prepare the response
-        response_data = {
-            "User": user,
-            "Stats": {
-                "Correct Guesses": user_stats[user]["correct"],
-                "Wrong Guesses": user_stats[user]["wrong"],
-                "Total Guesses": user_stats[user]["total_guesses"]
-            },
-            "Latest Guess": {
-                "Guess": guess,
-                "Is Correct": is_correct
-            }
-        }
-        # Return success response with stats and latest guess
-        return jsonify(response_data), 201
-
-    except Exception as e:
-        # Log unexpected exceptions and provide detailed debugging information
-        print("General Exception:", str(e))
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-
-@app.route('/api/guesses', methods=['GET'])
-def get_all_guesses():
-    try:
-        # Retrieve all guesses from the database
-        guesses = Guess.query.all()
-
-        # Prepare the response (removed id and timestamp)
-        guesses_data = []
-        for guess in guesses:
-            guesses_data.append({
-                "user": guess.guesser_name,
-                "guess": guess.guess,
-                "is_correct": guess.is_correct
-                # Removed "id" and "timestamp" fields from the response
-            })
-
-        return jsonify(guesses_data), 200
-
-    except Exception as e:
-        print("General Exception:", str(e))
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-
-
-@app.route('/api/guesses', methods=['PUT'])
-def update_guess():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid or missing JSON payload."}), 400
-        
-        # Log the received data to make sure the frontend is sending it correctly
-        print("Received data:", data)
-
-        required_keys = ['user', 'guess', 'is_correct']
-        is_valid, error_message = validate_request_data(data, required_keys)
-
-        if not is_valid:
-            return jsonify({"error": error_message}), 400
-
-        user = data['user']
-        new_guess = data['guess']
-        is_correct = data['is_correct']
-
-        # Find the existing guess in the database using the combination of user and guess
-        guess = Guess.query.filter_by(guesser_name=user, guess=new_guess).first()
-        if not guess:
-            return jsonify({"error": "Guess not found."}), 404
-
-        # Update the guess
-        guess.is_correct = is_correct
-        db.session.commit()  # Save changes to the database
-
-        response_data = {
-            "user": guess.guesser_name,
-            "guess": guess.guess,
-            "is_correct": guess.is_correct
-        }
-
-        return jsonify(response_data), 200
-
-    except Exception as e:
-        print("Error:", str(e))
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-
-
-
-@app.route('/api/guesses', methods=['DELETE'])
-def delete_guess():
-    try:
-        # Parse JSON input
-        data = request.json
-        if not data:
-            return jsonify({"error": "Invalid or missing JSON payload."}), 400
-
-        if 'user' not in data or 'guess' not in data:
-            return jsonify({"error": "Missing user or guess."}), 400
-
-        user = data['user']
-        guess_value = data['guess']
-
-        # Debugging log to check the data received
-        print(f"Received DELETE request for guess: {user} - {guess_value}")
-
-        # Find the guess in the database using user and guess
-        guess = Guess.query.filter_by(guesser_name=user, guess=guess_value).first()
-        if not guess:
-            print(f"Guess not found for: {user} - {guess_value}")
-            return jsonify({"error": "Guess not found."}), 404
-
-        # Debugging log to confirm guess deletion
-        print(f"Deleting guess: {user} - {guess_value}")
-
-        # Delete the guess from the database
-        db.session.delete(guess)
-        db.session.commit()  # Commit the deletion to the database
-
-        # Return success message with 200 status code
-        return jsonify({"message": f"Guess by {user} deleted successfully."}), 200
-
-    except Exception as e:
-        # Log unexpected exceptions
-        print("General Exception:", str(e))
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-
-
-
-
-
 # Add near the bottom of file, before if __name__ == "__main__":
 from model.competition import Time
-
-@app.route('/api/times', methods=['GET'])
-def get_times():
-    times = Time.query.all()
-    times_list = [time.read() for time in times]
-    return jsonify(times_list), 200
-
-@app.route('/api/times', methods=['POST'])
-def add_time():
-    data = request.json
-    users_name = data.get('users_name')
-    timer = data.get('timer')
-    amount_drawn = data.get('amount_drawn')
-
-    if not users_name or not timer or not amount_drawn:
-        return jsonify({"error": "Missing data"}), 400
-
-    new_time = Time(users_name=users_name, timer=timer, amount_drawn=amount_drawn)
-    db.session.add(new_time)
-    db.session.commit()
-
-    return jsonify({"message": "Time entry added successfully"}), 201
 
 def init_db():
     with app.app_context():
@@ -536,35 +285,6 @@ def init_db():
                 db.session.add(time_entry)
             db.session.commit()
 
-@app.route('/api/statistics', methods=['POST'])
-def update_statistics():
-    try:
-        data = request.get_json()
-        if not data or 'user_name' not in data:
-            return jsonify({"error": "Missing user_name field"}), 400
-
-        # Find existing stats or create new
-        stats = Stats.query.filter_by(user_name=data['user_name']).first()
-        if not stats:
-            stats = Stats(user_name=data['user_name'])
-            db.session.add(stats)
-        
-        # Update stats if correct/wrong provided
-        if 'correct' in data:
-            stats.update(correct_increment=data['correct'])
-        if 'wrong' in data:
-            stats.update(wrong_increment=data['wrong'])
-            
-        db.session.commit()
-        
-        return jsonify({
-            "message": "Statistics updated successfully",
-            "stats": stats.read()
-        }), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to update statistics: {str(e)}"}), 500
-
 
 # Add initialization at app startup
 _is_initialized = False
@@ -576,105 +296,13 @@ def initialize_tables():
         try:
             with app.app_context():
                 db.create_all()
-                initLeaderboardTable()  # Initialize leaderboard table
-                initStatsDataTable()
-                initPictureTable()  # This should now work
+                initStatsDataTable()  # Keep this initialization
+                initLeaderboardTable()
+                initPictureTable()
                 _is_initialized = True
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")
             return jsonify({"error": "Init failed"}), 500
-        
-@app.route('/api/save-drawing', methods=['POST'])
-def save_drawing():
-    try:
-        # Debugging: Log the incoming request
-        print("Incoming request data:", request.json)
-
-        # Parse JSON input
-        data = request.get_json()  # Use get_json() to parse JSON input
-        if not data:
-            print("No JSON data received")
-            return jsonify({"error": "Invalid or missing JSON payload."}), 400
-
-        # Log the received data for debugging
-        print("Received data:", data)
-
-        # Check if the required keys are present
-        if 'drawing' not in data:
-            print("Missing key: drawing")
-            return jsonify({"error": "Missing key: drawing"}), 400
-
-        # Extract values from the request
-        drawing_data = data['drawing']
-        user_name = data.get('user_name', 'default_user')  # Use default value if not provided
-        drawing_name = data.get('drawing_name', 'default_drawing')  # Use default value if not provided
-        timestamp = datetime.now().isoformat()
-
-        # Ensure the drawings directory exists
-        if not os.path.exists('drawings'):
-            os.makedirs('drawings')
-
-        # Decode and save the drawing
-        try:
-            base64_data = drawing_data.split(',')[1]
-            file_path = f"drawings/{user_name}_{drawing_name}_{timestamp}.jpeg".replace(':', '-')
-            with open(file_path, 'wb') as f:
-                f.write(base64.b64decode(base64_data))
-            print(f"Drawing saved to {file_path}")
-        except IndexError:
-            print("Error: Drawing data is not in the expected format")
-            return jsonify({"error": "Drawing data is not in the expected format"}), 400
-        except Exception as e:
-            print(f"Error decoding drawing data: {e}")
-            return jsonify({"error": f"Error decoding drawing data: {e}"}), 400
-
-        # Save metadata to the database
-        try:
-            database_path = current_app.config.get('DATABASE', 'instance/database.db')
-            with sqlite3.connect(database_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS drawings (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_name TEXT NOT NULL,
-                        drawing_name TEXT NOT NULL,
-                        file_path TEXT NOT NULL,
-                        timestamp TEXT NOT NULL
-                    )
-                ''')
-                cursor.execute('''
-                    INSERT INTO drawings (user_name, drawing_name, file_path, timestamp)
-                    VALUES (?, ?, ?, ?)
-                ''', (user_name, drawing_name, file_path, timestamp))
-                conn.commit()
-            print("Drawing metadata saved to database")
-        except Exception as e:
-            print(f"Error saving metadata to database: {e}")
-            return jsonify({"error": f"Error saving metadata to database: {e}"}), 500
-
-        # Return success response
-        return jsonify({"status": "Drawing saved successfully.", "file_path": file_path}), 201
-
-    except KeyError as e:
-        print("KeyError:", str(e))  # Log and handle missing keys
-        return jsonify({"error": f"Missing key: {str(e)}"}), 400
-    except TypeError as e:
-        print("TypeError:", str(e))  # Log and handle type errors
-        return jsonify({"error": f"Type error: {str(e)}"}), 400
-    except Exception as e:
-        # Log unexpected exceptions and provide better debugging info
-        print("General Exception:", str(e))
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500       
-        
-@app.route('/api/get-drawings', methods=['GET'])
-def get_drawings():
-    conn = sqlite3.connect('user_management.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT drawing_name FROM drawing')
-    drawings = cursor.fetchall()
-    conn.close()
-    
-    return jsonify({'drawings': [drawing[0] for drawing in drawings]})
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
