@@ -38,10 +38,13 @@ class Picture(db.Model):
         }
 
 def initPictureTable():
-    """Create the pictures table"""
+    """Create the pictures table if it doesn't exist"""
     try:
-        db.drop_all()  # Drop existing tables
-        db.create_all()  # Create new tables with updated schema
-        print("Picture table created successfully")
+        # Remove db.drop_all()
+        if not db.engine.dialect.has_table(db.engine, 'pictures'):
+            db.create_all()
+            print("Picture table created successfully")
+        else:
+            print("Picture table already exists")
     except Exception as e:
         print("Error creating Picture table:", str(e))
