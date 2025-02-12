@@ -14,7 +14,6 @@ import shutil
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
-from flask_cors import CORS
 from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
 from flask import g
 from api.leaderboard_api import leaderboard_api
@@ -57,15 +56,6 @@ from model.leaderboard import LeaderboardEntry, initLeaderboardTable
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 from model.picture import Picture, initPictureTable  # Update this line
 # server only Views
-
-# Add after app creation
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
 
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website
