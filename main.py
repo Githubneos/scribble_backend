@@ -39,6 +39,7 @@ from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api  # Update import
 from api.competition import competitors_api
 from api.drawingapi import drawing_api  # Import the drawing API blueprint
+from api.picture import picture_api # Add this import if not present
 
 # database Initialization functions
 from model.leaderboard import LeaderboardEntry
@@ -54,6 +55,7 @@ from model.vote import Vote, initVotes
 from model.guess import db, Guess, initGuessDataTable
 from model.leaderboard import LeaderboardEntry, initLeaderboardTable
 from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
+from model.picture import Picture, initPictureTable  # Update this line
 # server only Views
 
 # Add after app creation
@@ -84,6 +86,7 @@ app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
 app.register_blueprint(drawing_api)  # Register the drawing API blueprint
+app.register_blueprint(picture_api)
 
 
 # Tell Flask-Login the view function name of your login route
@@ -587,6 +590,7 @@ def initialize_tables():
             with app.app_context():
                 initStatsDataTable()
                 initLeaderboardTable()
+                initPictureTable()  # This should now work
                 db.create_all()
                 _is_initialized = True
         except Exception as e:
