@@ -14,9 +14,6 @@ import shutil
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
-from api.leaderboard_api import add_leaderboard_entry, get_leaderboard  # Import the functions
-from flask import g
-from api.leaderboard_api import leaderboard_api
 
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects
@@ -39,9 +36,10 @@ from api.leaderboard_api import leaderboard_api  # Update import
 from api.competition import competitors_api
 from api.drawingapi import drawing_api  # Import the drawing API blueprint
 from api.picture import picture_api # Add this import if not present
+from api.leaderboard_api import leaderboard_api
 
 # database Initialization functions
-from model.leaderboard import LeaderboardEntry
+from model.leaderboard import LeaderboardEntry, initLeaderboardTable
 from model.statistics_hiroshi import Stats, initStatsDataTable
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -52,8 +50,6 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 from model.guess import db, Guess, initGuessDataTable
-from model.leaderboard import LeaderboardEntry, initLeaderboardTable
-from model.leaderboard import  initLeaderboardTable  # Import the LeaderboardEntry model and init function
 from model.picture import Picture, initPictureTable  # Update this line
 # server only Views
 
@@ -199,8 +195,9 @@ def generate_data():
     initPosts()
     initNestPosts()
     initVotes()
-    initLeaderboardTable()  # Add this line
-   
+    initLeaderboardTable()
+
+
 # Backup the old database
 def backup_database(db_uri, backup_uri):
     """Backup the current database."""
@@ -578,10 +575,10 @@ def initialize_tables():
     if not _is_initialized:
         try:
             with app.app_context():
-                initStatsDataTable()
-                initLeaderboardTable()
-                initPictureTable()  # This should now work
                 db.create_all()
+                initLeaderboardTable()  # Initialize leaderboard table
+                initStatsDataTable()
+                initPictureTable()  # This should now work
                 _is_initialized = True
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")
