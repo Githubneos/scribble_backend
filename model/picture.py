@@ -1,9 +1,10 @@
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from sqlalchemy import inspect
-from __init__ import db
+from __init__ import app, db
 
 class Picture(db.Model):
+    """Picture Model for storing drawing images with user authentication"""
     __tablename__ = 'pictures'
     
     id = db.Column(db.Integer, primary_key=True)
