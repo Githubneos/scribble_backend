@@ -30,10 +30,9 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 from api.vote import vote_api
 from api.guess import guess_api
-from api.leaderboard_api import leaderboard_api  # Update import
+from api.leaderboard_api import leaderboard_api  # Keep only one import
 from api.competition import competitors_api
 from api.picture import picture_api # Add this import if not present
-from api.leaderboard_api import leaderboard_api
 
 # database Initialization functions
 from model.leaderboard import LeaderboardEntry, initLeaderboardTable
@@ -62,7 +61,7 @@ app.register_blueprint(group_api)
 app.register_blueprint(section_api)
 app.register_blueprint(car_chat_api)
 app.register_blueprint(guess_api)
-app.register_blueprint(leaderboard_api)
+app.register_blueprint(leaderboard_api)  # Make sure this registration is present
 app.register_blueprint(competitors_api)
 app.register_blueprint(stats_api)
 # Added new files to create nestPosts, uses a different format than Mortensen and didn't want to touch his junk
@@ -281,12 +280,11 @@ def initialize_tables():
         try:
             with app.app_context():
                 db.create_all()
-                initPictureTable()  # Keep this initialization
-                initTimerTable()  # Add this initialization
+                initPictureTable()   # Keep this initialization
+                initTimerTable()     # Add this initialization
                 initGuessDataTable()
                 initStatsDataTable()
                 initLeaderboardTable()
-                initPictureTable()
                 _is_initialized = True
         except Exception as e:
             app.logger.error(f"Error initializing: {str(e)}")

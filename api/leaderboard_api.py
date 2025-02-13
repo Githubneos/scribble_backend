@@ -1,140 +1,141 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app, Response, g
 from flask_restful import Api, Resource
-from model.leaderboard import LeaderboardEntry, db
+from datetime import datetime
+from __init__ import app
 from api.jwt_authorize import token_required
+from model.leaderboard import LeaderboardEntry
 
+# Create Blueprint with same pattern as other APIs
 leaderboard_api = Blueprint('leaderboard_api', __name__, url_prefix='/api')
 api = Api(leaderboard_api)
 
 class LeaderboardAPI:
-    """
-    Define the API CRUD endpoints for the Leaderboard model.
-    All endpoints require JWT token authentication.
-    """
     class _CRUD(Resource):
-        @token_required
-        def post(self, current_user):
-            """Create a new leaderboard entry"""
-            try:
-                data = request.get_json()
-                if not data:
-                    return {'message': 'No data provided'}, 400
+        @token_required()
+        def post(self):
+            current_user = g.current_user
+            data = request.get_json()
 
+            if not data or "drawing_name" not in data or "score" not in data:
+                return jsonify({
+                    "message": "Missing required fields",
+                    "error": "Bad Request"
+                }), 400
+
+            try:
                 entry = LeaderboardEntry(
-                    profile_name=data.get('profile_name', current_user.name),
-                    drawing_name=data.get('drawing_name'),
-                    score=int(data.get('score', 0))
+                    profile_name=current_user.name,
+                    drawing_name=data['drawing_name'],
+                    score=int(data['score']),
+                    created_by=current_user.id
                 )
-                
-                if entry.create():
-                    return {'message': 'Entry added successfully'}, 201
-                return {'message': 'Failed to add entry'}, 400
+                entry.create()
+                return jsonify(entry.read()), 201
 
             except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
+                return jsonify({
+                    "message": "Failed to create entry",
+                    "error": str(e)
+                }), 500
 
-        @token_required
-        def get(self, current_user):
-            """Retrieve all leaderboard entries"""
+        def get(self):
             try:
                 entries = LeaderboardEntry.query.order_by(
                     LeaderboardEntry.score.desc()
                 ).all()
-                return jsonify([entry.read() for entry in entries]), 200
-            except Exception as e:
-                return {'error': str(e)}, 500
-
-        @token_required
-        def put(self, current_user):
-            """Update a leaderboard entry"""
-            try:
-                data = request.get_json()
-                if not data:
-                    return {'message': 'No data provided'}, 400
-
-                profile_name = data.get('profile_name', current_user.name)
-                drawing_name = data.get('drawing_name')
-
-                # Check if user is updating their own entry
-                if profile_name != current_user.name:
-                    return {'message': 'Unauthorized to update other users entries'}, 403
-
-                existing_entry = LeaderboardEntry.query.filter_by(
-                    profile_name=profile_name,
-                    drawing_name=drawing_name
-                ).first()
-
-                new_score = int(data.get('score', 0))
-
-                if existing_entry:
-                    existing_entry.score = new_score
-                    db.session.commit()
-                    return {'message': 'Score updated successfully'}, 200
-
-                entry = LeaderboardEntry(
-                    profile_name=profile_name,
-                    drawing_name=drawing_name,
-                    score=new_score
-                )
-                
-                if entry.create():
-                    return {'message': 'New entry created'}, 201
-                return {'message': 'Failed to create entry'}, 400
+                return jsonify([entry.read() for entry in entries])
 
             except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
+                return jsonify([])
 
-        @token_required
-        def delete(self, current_user):
-            """Delete a leaderboard entry"""
+        @token_required()
+        def delete(self):
+            """Delete a leaderboard entry. Admin only."""
+            current_user = g.current_user
+            
+            # Check if user is admin
+            if current_user.role != 'Admin':
+                return jsonify({
+                    "message": "Admin access required",
+                    "error": "Forbidden"
+                }), 403
+
+            data = request.get_json()
+
+            if not data or "id" not in data:
+                return jsonify({
+                    "message": "Missing entry ID",
+                    "error": "Bad Request"
+                }), 400
+
             try:
-                data = request.get_json()
-                if not data:
-                    return {'message': 'No data provided'}, 400
-
-                profile_name = data.get('profile_name')
-                drawing_name = data.get('drawing_name')
-
-                # Check if user is deleting their own entry
-                if profile_name != current_user.name:
-                    return {'message': 'Unauthorized to delete other users entries'}, 403
-
-                if not profile_name or not drawing_name:
-                    return {'message': 'Missing profile_name or drawing_name'}, 400
-
-                entry = LeaderboardEntry.query.filter_by(
-                    profile_name=profile_name,
-                    drawing_name=drawing_name
-                ).first()
-
+                entry = LeaderboardEntry.query.get(data['id'])
                 if not entry:
-                    return {'message': 'Entry not found'}, 404
+                    return jsonify({
+                        "message": "Entry not found", 
+                        "error": "Not Found"
+                    }), 404
 
                 entry.delete()
-                return {'message': 'Entry deleted successfully'}, 200
-
-            except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
-
-    class _List(Resource):
-        @token_required
-        def get(self, current_user):
-            """Get all leaderboard entries sorted by score"""
-            try:
-                entries = LeaderboardEntry.query.order_by(
-                    LeaderboardEntry.score.desc()
-                ).all()
                 return jsonify({
-                    "message": "Entries retrieved successfully",
-                    "entries": [entry.read() for entry in entries]
+                    "message": "Entry deleted successfully"
                 }), 200
+
             except Exception as e:
-                return {'error': str(e)}, 500
+                return jsonify({
+                    "message": "Failed to delete entry",
+                    "error": str(e)
+                }), 500
 
-    # Register API endpoints
+        @token_required()
+        def put(self):
+            """Update a leaderboard entry. Admin only."""
+            current_user = g.current_user
+            
+            # Check if user is admin
+            if current_user.role != 'Admin':
+                return jsonify({
+                    "message": "Admin access required",
+                    "error": "Forbidden"
+                }), 403
+
+            data = request.get_json()
+
+            if not data or "id" not in data:
+                return jsonify({
+                    "message": "Missing entry ID",
+                    "error": "Bad Request"
+                }), 400
+
+            try:
+                entry = LeaderboardEntry.query.get(data['id'])
+                if not entry:
+                    return jsonify({
+                        "message": "Entry not found",
+                        "error": "Not Found"
+                    }), 404
+
+                # Update allowed fields
+                if 'score' in data:
+                    score = int(data['score'])
+                    if 0 <= score <= 100:
+                        entry.score = score
+                    else:
+                        return jsonify({
+                            "message": "Score must be between 0 and 100",
+                            "error": "Bad Request"
+                        }), 400
+
+                if 'drawing_name' in data:
+                    entry.drawing_name = data['drawing_name']
+
+                entry.update()
+                return jsonify(entry.read()), 200
+
+            except Exception as e:
+                return jsonify({
+                    "message": "Failed to update entry",
+                    "error": str(e)
+                }), 500
+
     api.add_resource(_CRUD, '/leaderboard')
-    api.add_resource(_List, '/leaderboard/list')
-
