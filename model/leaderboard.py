@@ -1,89 +1,98 @@
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
+from datetime import datetime
 
-# Database Model Class for managing leaderboard entries in the drawing game
-# Uses SQLAlchemy ORM to map Python objects to database tables
 class LeaderboardEntry(db.Model):
-    """LeaderboardEntry Model for storing drawing scores with user authentication"""
+    """LeaderboardEntry Model for storing drawing scores with JWT authentication"""
     __tablename__ = 'leaderboard'
-
-    # Database columns definition
-    # Each entry has unique ID, player name, drawing name and score
+    
+    # Define columns with better constraints
     id = db.Column(db.Integer, primary_key=True)
-    profile_name = db.Column(db.String(255), nullable=False)  # Player's username
-    drawing_name = db.Column(db.String(255), nullable=False)  # Name of the drawing
-    score = db.Column(db.Integer, nullable=False)            # Score achieved
-    created_by = db.Column(db.String(255), nullable=False)  # Add this for auth tracking
+    profile_name = db.Column(db.String(255), nullable=False)
+    drawing_name = db.Column(db.String(255), nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.now())
+    date_modified = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
 
-    # Constructor to initialize a new leaderboard entry
     def __init__(self, profile_name, drawing_name, score, created_by):
         self.profile_name = profile_name
         self.drawing_name = drawing_name
-        self.score = score
+        self.score = self._validate_score(score)
         self.created_by = created_by
 
-    # CREATE operation
-    # Adds new entry to database and handles potential integrity errors
-    def create(self):
-        """Add new leaderboard entry"""
+    def _validate_score(self, score):
+        """Validate score is within acceptable range"""
         try:
-            db.session.add(self)  # Add entry to database session
-            db.session.commit()   # Commit changes to database
-            return True
-        except IntegrityError:    # Handle database constraints violations
-            db.session.rollback() # Rollback on error
-            return False
+            score = int(score)
+            if not (0 <= score <= 100):
+                raise ValueError("Score must be between 0 and 100")
+            return score
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid score: {str(e)}")
 
-    # READ operation
-    # Converts database entry to dictionary format for API responses
+    def __repr__(self):
+        return f"LeaderboardEntry(id={self.id}, profile_name={self.profile_name}, score={self.score})"
+
+    def create(self):
+        """Create and return a new leaderboard entry"""
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return self
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
     def read(self):
-        """Return entry as dictionary"""
+        """Return dictionary of leaderboard entry attributes"""
         return {
+            "id": self.id,
             "profile_name": self.profile_name,
             "drawing_name": self.drawing_name,
             "score": self.score,
-            "created_by": self.created_by
+            "created_by": self.created_by,
+            "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S"),
+            "date_modified": self.date_modified.strftime("%Y-%m-%d %H:%M:%S")
         }
 
-    # UPDATE operation
-    # Updates entry fields with new data
-    def update(self, data):
-        """Update entry fields"""
+    def update(self, data=None):
+        """Update leaderboard entry with provided data"""
         try:
-            for key, value in data.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)  # Dynamically set attributes
+            if data:
+                if 'drawing_name' in data:
+                    self.drawing_name = data['drawing_name']
+                if 'score' in data:
+                    self.score = self._validate_score(data['score'])
+            self.date_modified = datetime.now()
             db.session.commit()
-            return True
-        except Exception:
+            return self
+        except Exception as e:
             db.session.rollback()
-            return False
+            raise e
 
-    # DELETE operation
-    # Removes entry from database
     def delete(self):
-        """Remove entry"""
+        """Delete the leaderboard entry"""
         try:
             db.session.delete(self)
             db.session.commit()
             return True
-        except Exception:
+        except Exception as e:
             db.session.rollback()
-            return False
+            raise e
 
     @classmethod
-    def list_all(cls):
-        """Return all entries as a list of dictionaries"""
-        entries = cls.query.all()
-        return [{
-            "profile_name": entry.profile_name,
-            "drawing_name": entry.drawing_name, 
-            "score": entry.score
-        } for entry in entries]
+    def find_by_id(cls, entry_id):
+        """Find leaderboard entry by ID"""
+        return cls.query.filter_by(id=entry_id).first()
 
-# Database initialization function
+    @classmethod
+    def find_by_user(cls, user_id):
+        """Find all entries by a specific user"""
+        return cls.query.filter_by(created_by=user_id).all()
+
 def initLeaderboardTable():
-    """Initialize table"""
+    """Initialize the leaderboard table"""
     with app.app_context():
-        db.create_all()  # Create database tables
+        db.create_all()
         print("Leaderboard table initialized.")
