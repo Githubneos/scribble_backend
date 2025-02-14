@@ -1,11 +1,10 @@
-from flask import Blueprint, request, jsonify, current_app, Response, g
+from flask import Blueprint, request, g
 from flask_restful import Api, Resource
 from datetime import datetime
 from __init__ import app
 from api.jwt_authorize import token_required
 from model.leaderboard import LeaderboardEntry
 
-# Create Blueprint with same pattern as other APIs
 leaderboard_api = Blueprint('leaderboard_api', __name__, url_prefix='/api')
 api = Api(leaderboard_api)
 
@@ -17,10 +16,10 @@ class LeaderboardAPI:
             data = request.get_json()
 
             if not data or "drawing_name" not in data or "score" not in data:
-                return jsonify({
+                return {
                     "message": "Missing required fields",
                     "error": "Bad Request"
-                }), 400
+                }, 400
 
             try:
                 entry = LeaderboardEntry(
@@ -30,23 +29,23 @@ class LeaderboardAPI:
                     created_by=current_user.id
                 )
                 entry.create()
-                return jsonify(entry.read()), 201
+                return entry.read(), 201
 
             except Exception as e:
-                return jsonify({
+                return {
                     "message": "Failed to create entry",
                     "error": str(e)
-                }), 500
+                }, 500
 
         def get(self):
             try:
                 entries = LeaderboardEntry.query.order_by(
                     LeaderboardEntry.score.desc()
                 ).all()
-                return jsonify([entry.read() for entry in entries])
+                return [entry.read() for entry in entries]
 
             except Exception as e:
-                return jsonify([])
+                return []
 
         @token_required()
         def delete(self):
@@ -55,37 +54,37 @@ class LeaderboardAPI:
             
             # Check if user is admin
             if current_user.role != 'Admin':
-                return jsonify({
+                return {
                     "message": "Admin access required",
                     "error": "Forbidden"
-                }), 403
+                }, 403
 
             data = request.get_json()
 
             if not data or "id" not in data:
-                return jsonify({
+                return {
                     "message": "Missing entry ID",
                     "error": "Bad Request"
-                }), 400
+                }, 400
 
             try:
                 entry = LeaderboardEntry.query.get(data['id'])
                 if not entry:
-                    return jsonify({
+                    return {
                         "message": "Entry not found", 
                         "error": "Not Found"
-                    }), 404
+                    }, 404
 
                 entry.delete()
-                return jsonify({
+                return {
                     "message": "Entry deleted successfully"
-                }), 200
+                }, 200
 
             except Exception as e:
-                return jsonify({
+                return {
                     "message": "Failed to delete entry",
                     "error": str(e)
-                }), 500
+                }, 500
 
         @token_required()
         def put(self):
@@ -94,26 +93,26 @@ class LeaderboardAPI:
             
             # Check if user is admin
             if current_user.role != 'Admin':
-                return jsonify({
+                return {
                     "message": "Admin access required",
                     "error": "Forbidden"
-                }), 403
+                }, 403
 
             data = request.get_json()
 
             if not data or "id" not in data:
-                return jsonify({
+                return {
                     "message": "Missing entry ID",
                     "error": "Bad Request"
-                }), 400
+                }, 400
 
             try:
                 entry = LeaderboardEntry.query.get(data['id'])
                 if not entry:
-                    return jsonify({
+                    return {
                         "message": "Entry not found",
                         "error": "Not Found"
-                    }), 404
+                    }, 404
 
                 # Update allowed fields
                 if 'score' in data:
@@ -121,21 +120,21 @@ class LeaderboardAPI:
                     if 0 <= score <= 100:
                         entry.score = score
                     else:
-                        return jsonify({
+                        return {
                             "message": "Score must be between 0 and 100",
                             "error": "Bad Request"
-                        }), 400
+                        }, 400
 
                 if 'drawing_name' in data:
                     entry.drawing_name = data['drawing_name']
 
                 entry.update()
-                return jsonify(entry.read()), 200
+                return entry.read(), 200
 
             except Exception as e:
-                return jsonify({
+                return {
                     "message": "Failed to update entry",
                     "error": str(e)
-                }), 500
+                }, 500
 
     api.add_resource(_CRUD, '/leaderboard')
