@@ -56,15 +56,8 @@ class LeaderboardEntry(db.Model):
             "date_modified": self.date_modified.strftime("%Y-%m-%d %H:%M:%S")
         }
 
-    def update(self, data=None):
-        """Update leaderboard entry with provided data"""
+    def update(self):
         try:
-            if data:
-                if 'drawing_name' in data:
-                    self.drawing_name = data['drawing_name']
-                if 'score' in data:
-                    self.score = self._validate_score(data['score'])
-            self.date_modified = datetime.now()
             db.session.commit()
             return self
         except Exception as e:
@@ -90,6 +83,30 @@ class LeaderboardEntry(db.Model):
     def find_by_user(cls, user_id):
         """Find all entries by a specific user"""
         return cls.query.filter_by(created_by=user_id).all()
+
+    @staticmethod
+    def restore(data):
+        entries = {}
+        for entry_data in data:
+            _ = entry_data.pop('id', None)  # Remove 'id' from entry_data
+            profile_name = entry_data.get("profile_name", None)
+            drawing_name = entry_data.get("drawing_name", None)
+            
+            # Look for existing entry by profile and drawing name
+            entry = LeaderboardEntry.query.filter_by(
+                profile_name=profile_name,
+                drawing_name=drawing_name
+            ).first()
+            
+            if entry:
+                entry.update(entry_data)
+            else:
+                entry = LeaderboardEntry(**entry_data)
+                entry.create()
+            
+            entries[f"{profile_name}_{drawing_name}"] = entry
+        
+        return entries
 
 def initLeaderboardTable():
     """Initialize the leaderboard table"""
