@@ -14,69 +14,111 @@ class GuessAPI:
     All endpoints require JWT token authentication.
     """
     class _CRUD(Resource):
-        @token_required
-        def post(self, current_user):
-            """Create a new guess"""
-            try:
-                data = request.get_json()
-                
-                if not data:
-                    return {'message': 'No input data provided'}, 400
-                if 'guesser_name' not in data:
-                    return {'message': 'Guesser name is required'}, 400
-                if 'guess' not in data:
-                    return {'message': 'Guess value is required'}, 400
-                if 'is_correct' not in data:
-                    return {'message': 'Correctness status is required'}, 400
+     @token_required
+     def post(self, current_user):
+        """Create a new guess"""
+        try:
+            data = request.get_json()
 
-                guess = Guess(
-                    guesser_name=data['guesser_name'],
-                    guess=data['guess'],
-                    is_correct=data['is_correct']
-                )
-                
-                if guess.create():
-                    return jsonify(guess.read()), 201
-                return {'message': 'Failed to create guess'}, 400
+            # Validate input data
+            if not data:
+                return {'message': 'No input data provided'}, 400
+            if 'guesser_name' not in data:
+                return {'message': 'Guesser name is required'}, 400
+            if 'guess' not in data:
+                return {'message': 'Guess value is required'}, 400
+            if 'is_correct' not in data:
+                return {'message': 'Correctness status is required'}, 400
+            if 'image_label' not in data:
+                return {'message': 'Image label is required'}, 400
+            if 'hints_used' not in data:
+                return {'message': 'Hints used is required'}, 400
 
-            except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
+            # Create new guess entry
+            guess = Guess(
+                guesser_name=data['guesser_name'],
+                guess=data['guess'],
+                is_correct=data['is_correct'],
+                image_label=data['image_label'],
+                hints_used=data['hints_used']  # Hints used field
+            )
 
-        @token_required
-        def get(self, current_user):
-            """Get a specific guess by ID"""
-            try:
-                data = request.get_json()
-                if not data or 'id' not in data:
-                    return {'message': 'Guess ID is required'}, 400
+            # Try to save the guess, commit transaction manually
+            db.session.add(guess)
+            db.session.commit()
+            return jsonify(guess.read()), 201
 
-                guess = Guess.query.get(data['id'])
-                if not guess:
-                    return {'message': 'Guess not found'}, 404
+        except Exception as e:
+            db.session.rollback()  # Rollback any changes if an error occurs
+            return {'error': str(e)}, 500
 
-                return jsonify(guess.read())
-            except Exception as e:
-                return {'error': str(e)}, 500
+    @token_required
+    def get(self, current_user):
+        """Get guesses for a specific image label"""
+        try:
+            # Use query params to get image_label
+            image_label = request.args.get('image_label')
+            if not image_label:
+                return {'message': 'Image label is required'}, 400
 
-        @token_required
-        def delete(self, current_user):
-            """Delete a guess"""
-            try:
-                data = request.get_json()
-                if not data or 'id' not in data:
-                    return {'message': 'Guess ID is required'}, 400
+            # Get guesses for the provided image_label
+            guesses = Guess.query.filter_by(image_label=image_label).all()
+            if not guesses:
+                return {'message': 'No guesses found for the given image label'}, 404
 
-                guess = Guess.query.get(data['id'])
-                if not guess:
-                    return {'message': 'Guess not found'}, 404
+            # Return guesses data
+            return jsonify([guess.read() for guess in guesses])
 
-                guess.delete()
-                return {'message': 'Guess deleted successfully'}, 200
-            except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
+        except Exception as e:
+            return {'error': str(e)}, 500
 
+    @token_required
+    def put(self, current_user):
+        """Update a guess based on guess ID"""
+        try:
+            data = request.get_json()
+            if not data or 'guess_id' not in data or 'guess' not in data:
+                return {'message': 'Guess ID and new guess value are required'}, 400
+
+            # Find the guess by its ID
+            guess = Guess.query.get(data['guess_id'])
+            if not guess:
+                return {'message': 'Guess not found for the given guess ID'}, 404
+
+            # Update guess details
+            guess.guess = data['guess']
+            guess.is_correct = data.get('is_correct', guess.is_correct)  # Optional update for correctness
+            guess.hints_used = data.get('hints_used', guess.hints_used)  # Optional update for hints used
+
+            db.session.commit()  # Commit the changes manually
+
+            return jsonify(guess.read()), 200
+        except Exception as e:
+            db.session.rollback()
+            return {'error': str(e)}, 500
+
+    @token_required
+    def delete(self, current_user):
+        """Delete a guess based on guess ID"""
+        try:
+            data = request.get_json()
+            if not data or 'guess_id' not in data:
+                return {'message': 'Guess ID is required'}, 400
+
+            # Find and delete the guess by ID
+            guess = Guess.query.get(data['guess_id'])
+            if not guess:
+                return {'message': 'Guess not found for the given guess ID'}, 404
+
+            db.session.delete(guess)  # Delete guess
+            db.session.commit()  # Commit deletion
+
+            return {'message': 'Guess deleted successfully'}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            return {'error': str(e)}, 500
+        
     class _List(Resource):
         @token_required
         def get(self, current_user):

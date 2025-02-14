@@ -7,6 +7,6 @@ services:
                          - .env
                  ports:
                          - "8203:8203"
-                volumes:
+                volumes: 
                          - ./instance:/instance
                 restart: unless-stopped
