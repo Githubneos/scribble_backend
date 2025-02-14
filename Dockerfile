@@ -12,7 +12,7 @@ FROM docker.io/python:3.11
 
   ENV GUNICORN_CMD_ARGS="--workers=1 --bind=0.0.0.0:8203"
 
-  EXPOSE 8209
+  EXPOSE 8203
 
   # Define environment variable
   ENV FLASK_ENV=deployment
