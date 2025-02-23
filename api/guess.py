@@ -129,25 +129,7 @@ class GuessAPI:
                     "message": "Failed to fetch statistics",
                     "error": str(e)
                 }), 500
-
-    class _Hint(Resource):
-        @token_required()
-        def get(self, word):
-            """Get next hint for a word"""
-            hints = WORDS.get(word.lower(), [])
-            hint_index = int(request.args.get('hint_number', 1))
-            
-            if hint_index >= len(hints):
-                return jsonify({
-                    "message": "No more hints available",
-                    "error": "Not Found"
-                }), 404
-
-            return jsonify({
-                "hint": hints[hint_index]
-            })
-
+                
     # Register API endpoints
     api.add_resource(_CRUD, '/guess')
     api.add_resource(_Stats, '/guess/stats')
-    api.add_resource(_Hint, '/guess/hint/<string:word>')
