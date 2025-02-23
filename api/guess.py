@@ -107,6 +107,47 @@ class GuessAPI:
                     "error": str(e)
                 }), 500
 
-   
+    class _Stats(Resource):
+        @token_required()
+        def get(self):
+            """Get user's guessing statistics"""
+            current_user = g.current_user
+            try:
+                user_guesses = WordGuess.query.filter_by(created_by=current_user.id).all()
+                correct_guesses = [g for g in user_guesses if g.is_correct]
+                
+                return jsonify({
+                    "total_guesses": len(user_guesses),
+                    "correct_guesses": len(correct_guesses),
+                    "accuracy": len(correct_guesses) / len(user_guesses) if user_guesses else 0,
+                    "avg_hints": sum(g.hint_used for g in user_guesses) / len(user_guesses) if user_guesses else 0,
+                    "recent_guesses": [g.read() for g in user_guesses[-5:]]
+                })
+
+            except Exception as e:
+                return jsonify({
+                    "message": "Failed to fetch statistics",
+                    "error": str(e)
+                }), 500
+
+    class _Hint(Resource):
+        @token_required()
+        def get(self, word):
+            """Get next hint for a word"""
+            hints = WORDS.get(word.lower(), [])
+            hint_index = int(request.args.get('hint_number', 1))
+            
+            if hint_index >= len(hints):
+                return jsonify({
+                    "message": "No more hints available",
+                    "error": "Not Found"
+                }), 404
+
+            return jsonify({
+                "hint": hints[hint_index]
+            })
+
     # Register API endpoints
     api.add_resource(_CRUD, '/guess')
+    api.add_resource(_Stats, '/guess/stats')
+    api.add_resource(_Hint, '/guess/hint/<string:word>')
