@@ -108,27 +108,52 @@ class GuessAPI:
                 }), 500
 
     class _Stats(Resource):
-        @token_required()
-        def get(self):
-            """Get user's guessing statistics"""
-            current_user = g.current_user
-            try:
-                user_guesses = WordGuess.query.filter_by(created_by=current_user.id).all()
-                correct_guesses = [g for g in user_guesses if g.is_correct]
-                
+     @token_required()
+     def get(self):
+        """Get user's guessing statistics"""
+        current_user = g.current_user
+        try:
+            # Fetch all guesses by the current user
+            user_guesses = WordGuess.query.filter_by(created_by=current_user.id).all()
+            
+            # If no guesses exist, handle that gracefully
+            if not user_guesses:
                 return jsonify({
-                    "total_guesses": len(user_guesses),
-                    "correct_guesses": len(correct_guesses),
-                    "accuracy": len(correct_guesses) / len(user_guesses) if user_guesses else 0,
-                    "avg_hints": sum(g.hint_used for g in user_guesses) / len(user_guesses) if user_guesses else 0,
-                    "recent_guesses": [g.read() for g in user_guesses[-5:]]
+                    "message": "No guesses found for this user.",
+                    "total_guesses": 0,
+                    "correct_guesses": 0,
+                    "accuracy": 0,
+                    "avg_hints": 0,
+                    "recent_guesses": []
                 })
+            
+            # Filter correct guesses
+            correct_guesses = [g for g in user_guesses if g.is_correct]
 
-            except Exception as e:
-                return jsonify({
-                    "message": "Failed to fetch statistics",
-                    "error": str(e)
-                }), 500
+            # Calculate statistics
+            total_guesses = len(user_guesses)
+            correct_guesses_count = len(correct_guesses)
+            accuracy = correct_guesses_count / total_guesses if total_guesses else 0
+            avg_hints = sum(g.hint_used for g in user_guesses) / total_guesses if total_guesses else 0
+
+            # Fetch the most recent guesses (up to 5)
+            recent_guesses = [g.read() for g in user_guesses[-5:]]
+
+            return jsonify({
+                "total_guesses": total_guesses,
+                "correct_guesses": correct_guesses_count,
+                "accuracy": accuracy,
+                "avg_hints": avg_hints,
+                "recent_guesses": recent_guesses
+            })
+
+        except Exception as e:
+            # Return an error message if an exception occurs
+            return jsonify({
+                "message": "Failed to fetch statistics",
+                "error": str(e)
+            }), 500
+
                 
     # Register API endpoints
     api.add_resource(_CRUD, '/guess')
