@@ -1,12 +1,12 @@
 version: '3'
 services:
-         web:
-                 image: scribble_2025
-                 build: .
-                 env_file:
-                         - .env
-                 ports:
-                         - "8203:8203"
-                volumes: 
-                         - ./instance:/instance
+        web:
+                image: scribble_2025
+                build: .
+                env_file:
+                        - .env # This file is optional; defaults will be used if it does not exist
+                ports:
+                        - "8203:8203"
+                volumes:
+                        - ./instance:/instance
                 restart: unless-stopped
