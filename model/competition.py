@@ -1,20 +1,20 @@
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 from __init__ import app, db
 
 class Time(db.Model):
-    """Time Model for storing competition timer data"""
-    __tablename__ = 'timer_data_table'
+    """Time Model for storing drawing completion times"""
+    __tablename__ = 'drawing_times'
 
     id = db.Column(db.Integer, primary_key=True)
     users_name = db.Column(db.String(255), nullable=False)
-    timer = db.Column(db.String(255), nullable=False)
-    amount_drawn = db.Column(db.Integer, nullable=False)
-    created_by = db.Column(db.String(255), nullable=True)  # Add auth tracking
+    time_taken = db.Column(db.Integer, nullable=False)  # Time in seconds
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.now())
 
-    def __init__(self, users_name, timer, amount_drawn, created_by=None):
+    def __init__(self, users_name, time_taken, created_by):
         self.users_name = users_name
-        self.timer = timer
-        self.amount_drawn = amount_drawn
+        self.time_taken = time_taken
         self.created_by = created_by
 
     def create(self):
@@ -30,30 +30,9 @@ class Time(db.Model):
         return {
             "id": self.id,
             "users_name": self.users_name,
-            "timer": self.timer,
-            "amount_drawn": self.amount_drawn,
-            "created_by": self.created_by
+            "time_taken": self.time_taken,
+            "date_created": self.date_created.strftime("%Y-%m-%d %H:%M:%S")
         }
-
-    def update(self, data):
-        try:
-            for key, value in data.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)
-            db.session.commit()
-            return True
-        except Exception:
-            db.session.rollback()
-            return False
-
-    def delete(self):
-        try:
-            db.session.delete(self)
-            db.session.commit()
-            return True
-        except Exception:
-            db.session.rollback()
-            return False
 
 def initTimerTable():
     """Initialize the timer database table"""
