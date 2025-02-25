@@ -1,8 +1,40 @@
 {% extends "layouts/base.html" %}
 
 {% block body %}
-<div class="container mt-5">
-    <h1>Competition Management</h1>
+<style>
+.container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.table {
+    background: white;
+}
+
+.speed-factor {
+    font-weight: bold;
+    color: #2196F3;
+}
+
+.speed-high {
+    color: #4CAF50;
+}
+
+.speed-medium {
+    color: #FFC107;
+}
+
+.speed-low {
+    color: #FF5722;
+}
+</style>
+
+<div class="container">
+    <h1 class="mb-4">Competition Management</h1>
     <table class="table table-striped" id="competitionTable">
         <thead>
             <tr>
@@ -26,7 +58,7 @@
                 <td>{{ entry.drawn_word }}</td>
                 <td>{{ entry.timer_duration }}s</td>
                 <td>{{ entry.time_taken }}s</td>
-                <td>{{ "%.2f"|format(entry.timer_duration/entry.time_taken) }}x</td>
+                <td class="speed-factor">{{ "%.2f"|format(entry.timer_duration/entry.time_taken) }}x</td>
                 <td>{{ entry.date_created }}</td>
                 {% if current_user.role == 'Admin' %}
                 <td>
@@ -82,4 +114,7 @@ $(document).ready(function() {
 });
 </script>
 {% endif %}
+{% endblock %}
+
+{% block background %}
 {% endblock %}
