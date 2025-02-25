@@ -283,13 +283,15 @@ def initialize_tables():
         try:
             with app.app_context():
                 db.create_all()
+                # Make sure Competition table is created before Leaderboard
+                initTimerTable()     # Competition table initialization
+                initLeaderboardTable()  # Leaderboard table initialization
                 initPictureTable()   # Keep this initialization
-                initTimerTable()     # Add this initialization
                 initGuessDataTable()
                 initStatsDataTable()
-                initLeaderboardTable()
                 _is_initialized = True
         except Exception as e:
+            print(f"Error initializing tables: {str(e)}")  # Add better error logging
             app.logger.error(f"Error initializing: {str(e)}")
             return jsonify({"error": "Init failed"}), 500
 
