@@ -17,7 +17,7 @@ class GuessAPI:
 
     class _CRUD(Resource):
 
-        @token_required()  # ✅ Add token authentication for POST, PUT, DELETE, and GET requests
+        @token_required()
         def post(self):
             """Submit a guess and store it with user and correctness status"""
             current_user = g.current_user
@@ -30,27 +30,38 @@ class GuessAPI:
                 }), 400
 
             try:
-                guess = data["user_guess"].strip().lower()  # Fix frontend key name
+                # Extract the user guess and correct word
+                guess = data["user_guess"].strip().lower()
                 correct_word = data["correct_word"].strip().lower()
 
+                # Determine if the guess is correct
                 is_correct = (guess == correct_word)
 
-                guess_entry = Guess(
+                # Create a new Guess object
+                word_guess = Guess(
                     guesser_name=current_user.name,
                     guess=guess,
                     correct_answer=correct_word,
                     is_correct=is_correct,
-                    created_by=current_user.id
+                    created_by=current_user.id,
+                    date_created=datetime.utcnow()
                 )
-                guess_entry.create()  
 
+                # Save the guess to the database
+                word_guess.create()  
+
+                # Return success response
                 return jsonify({
                     "message": "Guess submitted successfully",
-                    "guess": guess_entry.read(),
+                    "guess": word_guess.read(),
                     "correct": is_correct
                 }), 201
 
             except Exception as e:
+                # Log the error for debugging
+                print("Error occurred while submitting guess:", e)
+
+                # Return a failure response with the error message
                 return jsonify({
                     "message": "Failed to submit guess",
                     "error": str(e)
