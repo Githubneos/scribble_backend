@@ -8,14 +8,13 @@ import random
 
 guess_api = Blueprint('guess_api', __name__, url_prefix='/api')
 api = Api(guess_api)
-
 class GuessAPI:
     """
     Define the API CRUD endpoints for the Guess model.
     All endpoints require JWT token authentication.
     """
     class _CRUD(Resource):
-        
+
         @token_required()
         def post(self):
             """Submit a guess and store it with user and correctness status"""
@@ -42,7 +41,7 @@ class GuessAPI:
                     is_correct=is_correct,
                     created_by=current_user.id
                 )
-                
+
                 word_guess.create()  # Save to the database
                 return jsonify({
                     "message": "Guess submitted successfully",
@@ -58,32 +57,36 @@ class GuessAPI:
 
         @token_required()
         def get(self):
-            """Fetch a specific guess by ID"""
+            """Fetch all guesses or a specific guess by ID"""
             current_user = g.current_user
-            data = request.get_json()
-
-            if not data or "id" not in data:
-                return jsonify({
-                    "message": "Missing required fields",
-                    "error": "Bad Request"
-                }), 400
+            data = request.get_json(silent=True)  # Allow GET without a request body
 
             try:
-                guess = WordGuess.query.get(data['id'])
-                if not guess:
+                # If an ID is provided, fetch that specific guess
+                if data and "id" in data:
+                    guess = WordGuess.query.get(data["id"])
+                    if not guess:
+                        return jsonify({
+                            "message": "Guess not found",
+                            "error": "Not Found"
+                        }), 404
+
                     return jsonify({
-                        "message": "Guess not found", 
-                        "error": "Not Found"
-                    }), 404
-                
+                        "message": "Guess fetched successfully",
+                        "guess": guess.read()
+                    }), 200
+
+                # Otherwise, return all guesses for the current user
+                guesses = WordGuess.query.filter_by(created_by=current_user.id).all()
+
                 return jsonify({
-                    "message": "Guess fetched successfully",
-                    "guess": guess.read()
+                    "message": "Guesses fetched successfully",
+                    "recent_guesses": [guess.read() for guess in guesses]
                 }), 200
 
             except Exception as e:
                 return jsonify({
-                    "message": "Failed to fetch guess",
+                    "message": "Failed to fetch guess(es)",
                     "error": str(e)
                 }), 500
 
@@ -93,7 +96,7 @@ class GuessAPI:
             current_user = g.current_user
             data = request.get_json()
 
-            if not data or "id" not in data or "guess" not in data:
+            if not data or "id" not in data or "guess" not in data or "correct_word" not in data:
                 return jsonify({
                     "message": "Missing required fields",
                     "error": "Bad Request"
@@ -103,7 +106,7 @@ class GuessAPI:
                 guess = WordGuess.query.get(data['id'])
                 if not guess:
                     return jsonify({
-                        "message": "Guess not found", 
+                        "message": "Guess not found",
                         "error": "Not Found"
                     }), 404
 
@@ -152,7 +155,7 @@ class GuessAPI:
                 guess = WordGuess.query.get(data['id'])
                 if not guess:
                     return jsonify({
-                        "message": "Guess not found", 
+                        "message": "Guess not found",
                         "error": "Not Found"
                     }), 404
 
@@ -175,6 +178,7 @@ class GuessAPI:
                     "message": "Failed to delete guess",
                     "error": str(e)
                 }), 500
+
 
                 
     # Register API endpoints
