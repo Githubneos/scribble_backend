@@ -28,6 +28,9 @@ timer_state = {
     "is_active": False
 }
 
+# Change the timer_durations to store both duration and word
+timer_durations = {}  # Will store {user_id: {'duration': int, 'word': str}}
+
 def timer_thread(duration):
     """Background thread to handle the countdown."""
     global timer_state
@@ -64,6 +67,13 @@ class CompetitionAPI:
                         "error": "Bad Request"
                     }, 400
 
+                # Store both duration and word for this user
+                word = random.choice(WORDS)
+                timer_durations[current_user.id] = {
+                    'duration': duration,
+                    'word': word
+                }
+
                 # Start timer thread
                 thread = threading.Thread(target=timer_thread, args=(duration,))
                 thread.start()
@@ -71,7 +81,7 @@ class CompetitionAPI:
                 return {
                     "message": "Timer started",
                     "duration": duration,
-                    "word": random.choice(WORDS)
+                    "word": word
                 }, 200
 
             except Exception as e:
@@ -94,37 +104,50 @@ class CompetitionAPI:
                     "error": str(e)
                 }, 500
 
-    class _CRUD(Resource):
         @token_required()
-        def post(self):
-            """Save user's drawing time"""
+        def put(self):
+            """Stop timer and save time entry"""
             current_user = g.current_user
-            data = request.get_json()
-            
-            if not data or "time_taken" not in data:
-                return {
-                    "message": "Missing time taken",
-                    "error": "Bad Request"
-                }, 400
-
             try:
+                timer_data = timer_durations.get(current_user.id)
+                if timer_data is None:
+                    return {
+                        "message": "No timer data found",
+                        "error": "Bad Request"
+                    }, 400
+
+                duration = timer_data['duration']
+                time_taken = duration - timer_state["time_remaining"]
+                timer_state["is_active"] = False
+
+                # Create time entry with word
                 new_time = Time(
                     users_name=current_user.name,
-                    time_taken=data['time_taken'],
+                    timer_duration=duration,
+                    time_taken=time_taken,
+                    drawn_word=timer_data['word'],  # Add the word
                     created_by=current_user.id
                 )
                 
                 new_time.create()
-                return new_time.read(), 201
+                del timer_durations[current_user.id]
+
+                return {
+                    "message": "Timer stopped and time saved",
+                    "time_entry": new_time.read()
+                }, 200
 
             except Exception as e:
+                # Add logging for debugging
+                print(f"Error in put method: {str(e)}")
                 return {
-                    "message": "Failed to save time",
+                    "message": "Failed to stop timer",
                     "error": str(e)
                 }, 500
 
+    class _Times(Resource):
         def get(self):
-            """Get all drawing times ordered by fastest first"""
+            """Get all times ordered by fastest completion"""
             try:
                 entries = Time.query.order_by(Time.time_taken.asc()).all()
                 return [entry.read() for entry in entries]
@@ -133,8 +156,8 @@ class CompetitionAPI:
 
         @token_required()
         def delete(self):
+            """Delete a time entry (Admin only)"""
             current_user = g.current_user
-            
             if current_user.role != 'Admin':
                 return {
                     "message": "Admin access required",
@@ -167,18 +190,7 @@ class CompetitionAPI:
                     "error": str(e)
                 }, 500
 
-    class _List(Resource):
-        @token_required
-        def get(self, current_user):
-            """Get all time entries"""
-            try:
-                times = Time.query.all()
-                return jsonify([time.read() for time in times])
-            except Exception as e:
-                return {'error': str(e)}, 500
-
     # Register API endpoints
     api.add_resource(_Timer, '/competition/timer')
-    api.add_resource(_CRUD, '/competition')
-    api.add_resource(_List, '/competition/all')
+    api.add_resource(_Times, '/competition/times')
 
