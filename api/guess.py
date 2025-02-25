@@ -61,26 +61,20 @@ class GuessAPI:
                     "message": "Failed to submit guess",
                     "error": str(e)
                 }), 500
-
-        @token_required()  # Ensure JWT token is required
+                
+        @token_required()
         def get(self):
-            """Fetch all guesses or a specific guess by ID"""
+            """Fetch all guesses for the current user"""
             current_user = g.current_user
-            data = request.get_json(silent=True)  # Allow GET without a request body
 
             try:
-                if data and "id" in data:
-                    guess = Guess.query.get(data["id"])
-                    if not guess:
-                        return jsonify({"message": "Guess not found", "error": "Not Found"}), 404
-                    return jsonify({"message": "Guess fetched successfully", "guess": guess.read()}), 200
-
-                # Fetch all guesses created by the current user
                 guesses = Guess.query.filter_by(created_by=current_user.id).all()
 
-                # Check if there are guesses to return
                 if not guesses:
-                    return jsonify({"message": "No guesses found for this user"}), 404
+                    return jsonify({
+                        "message": "No guesses found",
+                        "recent_guesses": []
+                    }), 200  # Return an empty list instead of a 404
 
                 return jsonify({
                     "message": "Guesses fetched successfully",
@@ -88,11 +82,11 @@ class GuessAPI:
                 }), 200
 
             except Exception as e:
+                print("Error occurred while fetching guesses:", e)
                 return jsonify({
-                    "message": "Failed to fetch guess(es)",
+                    "message": "Failed to fetch guesses",
                     "error": str(e)
                 }), 500
-
 
         @token_required()
         def put(self):
