@@ -4,15 +4,11 @@ from datetime import datetime
 from __init__ import app
 from api.jwt_authorize import token_required
 import random
+from guess import Guess
+
 
 guess_api = Blueprint('guess_api', __name__, url_prefix='/api')
 api = Api(guess_api)
-from flask import Flask, request, jsonify, g
-from flask_restful import Resource
-from datetime import datetime
-from models import WordGuess
-from auth import token_required
-
 class GuessAPI:
     """
     API CRUD endpoints for the Guess model.
@@ -21,7 +17,7 @@ class GuessAPI:
 
     class _CRUD(Resource):
 
-        @token_required()
+        @token_required()  # ✅ Add token authentication for POST, PUT, DELETE, and GET requests
         def post(self):
             """Submit a guess and store it with user and correctness status"""
             current_user = g.current_user
@@ -39,17 +35,18 @@ class GuessAPI:
 
                 is_correct = (guess == correct_word)
 
-                word_guess = WordGuess(
+                guess_entry = Guess(
                     guesser_name=current_user.name,
                     guess=guess,
+                    correct_answer=correct_word,
                     is_correct=is_correct,
                     created_by=current_user.id
                 )
-                word_guess.create()  
+                guess_entry.create()  
 
                 return jsonify({
                     "message": "Guess submitted successfully",
-                    "guess": word_guess.read(),
+                    "guess": guess_entry.read(),
                     "correct": is_correct
                 }), 201
 
@@ -63,17 +60,23 @@ class GuessAPI:
         def get(self):
             """Fetch all guesses or a specific guess by ID"""
             current_user = g.current_user
-            data = request.get_json(silent=True)
+            data = request.get_json(silent=True)  # Allow GET without a request body
 
             try:
+                # If an ID is provided, fetch that specific guess
                 if data and "id" in data:
-                    guess = WordGuess.query.get(data["id"])
+                    guess = Guess.query.get(data["id"])
                     if not guess:
                         return jsonify({"message": "Guess not found", "error": "Not Found"}), 404
                     return jsonify({"message": "Guess fetched successfully", "guess": guess.read()}), 200
 
-                # ✅ Fetch all guesses created by the user
-                guesses = WordGuess.query.filter_by(created_by=current_user.id).all()
+                # Otherwise, fetch all guesses created by the current user
+                guesses = Guess.query.filter_by(created_by=current_user.id).all()
+
+                # Check if there are guesses to return
+                if not guesses:
+                    return jsonify({"message": "No guesses found for this user"}), 404
+
                 return jsonify({
                     "message": "Guesses fetched successfully",
                     "recent_guesses": [guess.read() for guess in guesses]
@@ -98,7 +101,7 @@ class GuessAPI:
                 }), 400
 
             try:
-                guess = WordGuess.query.get(data["id"])
+                guess = Guess.query.get(data["id"])
                 if not guess:
                     return jsonify({"message": "Guess not found", "error": "Not Found"}), 404
 
@@ -110,6 +113,7 @@ class GuessAPI:
                 is_correct = (updated_guess == correct_word)
 
                 guess.guess = updated_guess
+                guess.correct_answer = correct_word
                 guess.is_correct = is_correct
                 guess.updated_at = datetime.utcnow()
                 guess.update()
@@ -139,7 +143,7 @@ class GuessAPI:
                 }), 400
 
             try:
-                guess = WordGuess.query.get(data["id"])
+                guess = Guess.query.get(data["id"])
                 if not guess:
                     return jsonify({"message": "Guess not found", "error": "Not Found"}), 404
 
