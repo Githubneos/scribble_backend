@@ -4,11 +4,12 @@ from datetime import datetime
 from __init__ import app
 from api.jwt_authorize import token_required
 import random
-from guess import Guess
+from model.guess import Guess 
 
 
 guess_api = Blueprint('guess_api', __name__, url_prefix='/api')
 api = Api(guess_api)
+
 class GuessAPI:
     """
     API CRUD endpoints for the Guess model.
@@ -17,7 +18,7 @@ class GuessAPI:
 
     class _CRUD(Resource):
 
-        @token_required()
+        @token_required()  # Ensure JWT token is required
         def post(self):
             """Submit a guess and store it with user and correctness status"""
             current_user = g.current_user
@@ -30,14 +31,11 @@ class GuessAPI:
                 }), 400
 
             try:
-                # Extract the user guess and correct word
                 guess = data["user_guess"].strip().lower()
                 correct_word = data["correct_word"].strip().lower()
 
-                # Determine if the guess is correct
                 is_correct = (guess == correct_word)
 
-                # Create a new Guess object
                 word_guess = Guess(
                     guesser_name=current_user.name,
                     guess=guess,
@@ -48,9 +46,8 @@ class GuessAPI:
                 )
 
                 # Save the guess to the database
-                word_guess.create()  
+                word_guess.create()
 
-                # Return success response
                 return jsonify({
                     "message": "Guess submitted successfully",
                     "guess": word_guess.read(),
@@ -60,28 +57,25 @@ class GuessAPI:
             except Exception as e:
                 # Log the error for debugging
                 print("Error occurred while submitting guess:", e)
-
-                # Return a failure response with the error message
                 return jsonify({
                     "message": "Failed to submit guess",
                     "error": str(e)
                 }), 500
 
-        @token_required()  # ✅ Add token authentication for GET requests
+        @token_required()  # Ensure JWT token is required
         def get(self):
             """Fetch all guesses or a specific guess by ID"""
             current_user = g.current_user
             data = request.get_json(silent=True)  # Allow GET without a request body
 
             try:
-                # If an ID is provided, fetch that specific guess
                 if data and "id" in data:
                     guess = Guess.query.get(data["id"])
                     if not guess:
                         return jsonify({"message": "Guess not found", "error": "Not Found"}), 404
                     return jsonify({"message": "Guess fetched successfully", "guess": guess.read()}), 200
 
-                # Otherwise, fetch all guesses created by the current user
+                # Fetch all guesses created by the current user
                 guesses = Guess.query.filter_by(created_by=current_user.id).all()
 
                 # Check if there are guesses to return
@@ -98,6 +92,7 @@ class GuessAPI:
                     "message": "Failed to fetch guess(es)",
                     "error": str(e)
                 }), 500
+
 
         @token_required()
         def put(self):
