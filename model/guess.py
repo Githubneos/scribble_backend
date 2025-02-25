@@ -4,6 +4,7 @@ from __init__ import app, db
 import requests
 from sqlalchemy.orm import sessionmaker
 from flask_sqlalchemy import SQLAlchemy
+
 class Guess(db.Model):
     """Model for storing user guesses"""
     __tablename__ = 'guesses'
