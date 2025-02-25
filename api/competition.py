@@ -8,10 +8,16 @@ import os
 import time
 from model.competition import Time
 from api.jwt_authorize import token_required
+import random
 
 # Initialize a Flask application
 app = Flask(__name__)
 CORS(app)
+
+WORDS = [
+    "cat", "dog", "house", "tree", "car", "flower", "sun", "moon", "star", "cloud",
+    # Add more words as needed
+]
 
 competitors_api = Blueprint('competitors_api', __name__, url_prefix='/api')
 api = Api(competitors_api)
@@ -21,6 +27,9 @@ timer_state = {
     "time_remaining": 0,
     "is_active": False
 }
+
+# Change the timer_durations to store both duration and word
+timer_durations = {}  # Will store {user_id: {'duration': int, 'word': str}}
 
 def timer_thread(duration):
     """Background thread to handle the countdown."""
@@ -38,131 +47,150 @@ class CompetitionAPI:
     """Define the API CRUD endpoints for the Competition model"""
     
     class _Timer(Resource):
-        @token_required
-        def post(self, current_user):
+        @token_required()
+        def post(self):
             """Start a new timer"""
+            current_user = g.current_user
+            data = request.get_json()
+            
+            if not data or "duration" not in data:
+                return {
+                    "message": "Duration required",
+                    "error": "Bad Request"
+                }, 400
+
             try:
-                data = request.get_json()
-                duration = data.get("duration")
+                duration = int(data['duration'])
+                if duration <= 0:
+                    return {
+                        "message": "Invalid duration",
+                        "error": "Bad Request"
+                    }, 400
 
-                if not duration or not isinstance(duration, int) or duration <= 0:
-                    return {'message': 'Invalid duration'}, 400
+                # Store both duration and word for this user
+                word = random.choice(WORDS)
+                timer_durations[current_user.id] = {
+                    'duration': duration,
+                    'word': word
+                }
 
-                global timer_state
-                timer_state["is_active"] = False
+                # Start timer thread
                 thread = threading.Thread(target=timer_thread, args=(duration,))
                 thread.start()
 
-                return {'message': 'Timer started', 'duration': duration}, 200
+                return {
+                    "message": "Timer started",
+                    "duration": duration,
+                    "word": word
+                }, 200
+
             except Exception as e:
-                return {'error': str(e)}, 500
+                return {
+                    "message": "Failed to start timer",
+                    "error": str(e)
+                }, 500
 
-        @token_required
-        def get(self, current_user):
+        @token_required()
+        def get(self):
             """Get current timer status"""
-            return jsonify(timer_state)
-
-    class _CRUD(Resource):
-        @token_required
-        def post(self, current_user):
-            """Create a new time entry"""
             try:
-                data = request.get_json()
-                
-                if not data:
-                    return {'message': 'No input data provided'}, 400
-                
-                required_fields = ['users_name', 'timer', 'amount_drawn']
-                if not all(field in data for field in required_fields):
-                    return {'message': 'Missing required fields'}, 400
+                return {
+                    "time_remaining": timer_state["time_remaining"],
+                    "is_active": timer_state["is_active"]
+                }, 200
+            except Exception as e:
+                return {
+                    "message": "Failed to get timer status",
+                    "error": str(e)
+                }, 500
 
+        @token_required()
+        def put(self):
+            """Stop timer and save time entry"""
+            current_user = g.current_user
+            try:
+                timer_data = timer_durations.get(current_user.id)
+                if timer_data is None:
+                    return {
+                        "message": "No timer data found",
+                        "error": "Bad Request"
+                    }, 400
+
+                duration = timer_data['duration']
+                time_taken = duration - timer_state["time_remaining"]
+                timer_state["is_active"] = False
+
+                # Create time entry with word
                 new_time = Time(
-                    users_name=data['users_name'],
-                    timer=data['timer'],
-                    amount_drawn=data['amount_drawn']
+                    users_name=current_user.name,
+                    timer_duration=duration,
+                    time_taken=time_taken,
+                    drawn_word=timer_data['word'],  # Add the word
+                    created_by=current_user.id
                 )
                 
-                db.session.add(new_time)
-                db.session.commit()
-                
-                return {'message': 'Time entry created successfully'}, 201
-            except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
+                new_time.create()
+                del timer_durations[current_user.id]
 
-        @token_required
-        def get(self, current_user):
-            """Get a specific time entry"""
+                return {
+                    "message": "Timer stopped and time saved",
+                    "time_entry": new_time.read()
+                }, 200
+
+            except Exception as e:
+                # Add logging for debugging
+                print(f"Error in put method: {str(e)}")
+                return {
+                    "message": "Failed to stop timer",
+                    "error": str(e)
+                }, 500
+
+    class _Times(Resource):
+        def get(self):
+            """Get all times ordered by fastest completion"""
             try:
-                data = request.get_json()
-                if not data or 'id' not in data:
-                    return {'message': 'Time entry ID required'}, 400
-
-                time_entry = Time.query.get(data['id'])
-                if not time_entry:
-                    return {'message': 'Time entry not found'}, 404
-
-                return jsonify(time_entry.read())
+                entries = Time.query.order_by(Time.time_taken.asc()).all()
+                return [entry.read() for entry in entries]
             except Exception as e:
-                return {'error': str(e)}, 500
+                return []
 
-        @token_required
-        def put(self, current_user):
-            """Update a time entry"""
+        @token_required()
+        def delete(self):
+            """Delete a time entry (Admin only)"""
+            current_user = g.current_user
+            if current_user.role != 'Admin':
+                return {
+                    "message": "Admin access required",
+                    "error": "Forbidden"
+                }, 403
+
+            data = request.get_json()
+            if not data or "id" not in data:
+                return {
+                    "message": "Missing entry ID",
+                    "error": "Bad Request"
+                }, 400
+
             try:
-                data = request.get_json()
-                if not data or 'id' not in data:
-                    return {'message': 'Time entry ID required'}, 400
+                entry = Time.query.get(data['id'])
+                if not entry:
+                    return {
+                        "message": "Entry not found", 
+                        "error": "Not Found"
+                    }, 404
 
-                time_entry = Time.query.get(data['id'])
-                if not time_entry:
-                    return {'message': 'Time entry not found'}, 404
+                entry.delete()
+                return {
+                    "message": "Entry deleted successfully"
+                }, 200
 
-                time_entry.users_name = data.get('users_name', time_entry.users_name)
-                time_entry.timer = data.get('timer', time_entry.timer)
-                time_entry.amount_drawn = data.get('amount_drawn', time_entry.amount_drawn)
-                
-                db.session.commit()
-                return {'message': 'Time entry updated successfully'}, 200
             except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
-
-        @token_required
-        def delete(self, current_user):
-            """Delete a time entry"""
-            try:
-                data = request.get_json()
-                if not data or 'id' not in data:
-                    return {'message': 'Time entry ID required'}, 400
-
-                time_entry = Time.query.get(data['id'])
-                if not time_entry:
-                    return {'message': 'Time entry not found'}, 404
-
-                db.session.delete(time_entry)
-                db.session.commit()
-                return {'message': 'Time entry deleted successfully'}, 200
-            except Exception as e:
-                db.session.rollback()
-                return {'error': str(e)}, 500
-
-    class _List(Resource):
-        @token_required
-        def get(self, current_user):
-            """Get all time entries"""
-            try:
-                times = Time.query.all()
-                return jsonify([time.read() for time in times])
-            except Exception as e:
-                return {'error': str(e)}, 500
+                return {
+                    "message": "Failed to delete entry",
+                    "error": str(e)
+                }, 500
 
     # Register API endpoints
     api.add_resource(_Timer, '/competition/timer')
-    api.add_resource(_CRUD, '/competition')
-    api.add_resource(_List, '/competition/all')
+    api.add_resource(_Times, '/competition/times')
 
-if __name__ == '__main__':
-    port = int(os.environ.get("FLASK_RUN_PORT", 8023))
-    app.register_blueprint(competitors_api)
-    app.run(host="0.0.0.0", port=port, debug=True)

@@ -219,6 +219,7 @@ def extract_data():
         data['groups'] = [group.read() for group in Group.query.all()]
         data['channels'] = [channel.read() for channel in Channel.query.all()]
         data['posts'] = [post.read() for post in Post.query.all()]
+        data['timer_entries'] = [time.read() for time in Time.query.all()]
     return data
 
 
@@ -249,6 +250,8 @@ def restore_data(data):
         _ = Group.restore(data['groups'], users)
         _ = Channel.restore(data['channels'])
         _ = Post.restore(data['posts'])
+        if 'timer_entries' in data:
+            _ = Time.restore(data['timer_entries'])
     print("Data restored to the new database.")
 
 

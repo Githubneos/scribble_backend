@@ -55,8 +55,8 @@ def token_required(roles=None):
                         "error": "Forbidden",
                         "data": data
                     }, 403
-                    
-                # Authentication succes, set the current_user in the global context (Flask's g object)
+
+                # Authentication success, set the current_user in the global context (Flask's g object)
                 g.current_user = current_user
             except jwt.ExpiredSignatureError:
                 return {

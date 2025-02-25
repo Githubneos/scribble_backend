@@ -4,21 +4,21 @@ from sqlalchemy import inspect
 from __init__ import app, db
 
 class Picture(db.Model):
-    """Picture Model for storing drawing images with user authentication"""
+    """Picture Model for storing drawing images"""
     __tablename__ = 'pictures'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(255), nullable=False)
-    drawing_name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text)
-    image_data = db.Column(db.Text, nullable=False)  # Store base64 image data
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __init__(self, user_name, drawing_name, image_data, description=None):
-        self.user_name = user_name
+    id = db.Column(db.Integer, primary_key=True)
+    drawing_name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    image_data = db.Column(db.Text, nullable=False)  # Base64 encoded image
+    user_name = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def __init__(self, drawing_name, description, image_data, user_name):
         self.drawing_name = drawing_name
         self.description = description
         self.image_data = image_data
+        self.user_name = user_name
 
     def create(self):
         try:
@@ -31,12 +31,12 @@ class Picture(db.Model):
 
     def read(self):
         return {
-            'id': self.id,
-            'user_name': self.user_name,
-            'drawing_name': self.drawing_name,
-            'description': self.description,
-            'image_url': f"data:image/png;base64,{self.image_data}",
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            "id": self.id,
+            "drawing_name": self.drawing_name,
+            "description": self.description,
+            "image_data": self.image_data,  # This should include the data URI prefix
+            "user_name": self.user_name,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
 
 def initPictureTable():
