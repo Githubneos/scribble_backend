@@ -1,8 +1,40 @@
 {% extends "layouts/base.html" %}
 
 {% block body %}
-<div class="container mt-5">
-    <h1>Drawing Management</h1>
+<style>
+.container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.table {
+    background: white;
+}
+
+.preview-image {
+    max-width: 100px;
+    max-height: 100px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.preview-image:hover {
+    transform: scale(1.1);
+}
+
+.modal-content {
+    background: white;
+    padding: 1rem;
+}
+</style>
+
+<div class="container">
+    <h1 class="mb-4">Drawing Management</h1>
     <table class="table table-striped" id="pictureTable">
         <thead>
             <tr>
@@ -26,7 +58,7 @@
                 <td>
                     <img src="{{ picture.image_data }}" 
                          alt="{{ picture.drawing_name }}" 
-                         style="max-width: 100px; max-height: 100px;"
+                         class="preview-image"
                          onclick="showFullImage(this.src)"
                     >
                 </td>
@@ -49,8 +81,8 @@
 <div class="modal fade" id="imageModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-body">
-                <img id="fullImage" src="" style="width: 100%;">
+            <div class="modal-body p-0">
+                <img id="fullImage" src="" style="width: 100%; border-radius: 4px;">
             </div>
         </div>
     </div>
@@ -104,4 +136,7 @@ function showFullImage(src) {
 }
 </script>
 {% endif %}
+{% endblock %}
+
+{% block background %}
 {% endblock %}
