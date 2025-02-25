@@ -1,0 +1,85 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1>Competition Management</h1>
+    <table class="table table-striped" id="competitionTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Player</th>
+                <th>Drawing Word</th>
+                <th>Timer Duration</th>
+                <th>Time Taken</th>
+                <th>Speed Factor</th>
+                <th>Date Created</th>
+                {% if current_user.role == 'Admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in competition_data %}
+            <tr>
+                <td>{{ entry.id }}</td>
+                <td>{{ entry.users_name }}</td>
+                <td>{{ entry.drawn_word }}</td>
+                <td>{{ entry.timer_duration }}s</td>
+                <td>{{ entry.time_taken }}s</td>
+                <td>{{ "%.2f"|format(entry.timer_duration/entry.time_taken) }}x</td>
+                <td>{{ entry.date_created }}</td>
+                {% if current_user.role == 'Admin' %}
+                <td>
+                    <button class="btn btn-danger delete-btn" data-id="{{ entry.id }}">
+                        Delete
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if current_user.role == 'Admin' %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $("#competitionTable").DataTable({
+        order: [[5, 'desc']], // Sort by speed factor by default
+        pageLength: 25
+    });
+
+    // Handle delete button clicks
+    $(document).on("click", ".delete-btn", function() {
+        var id = $(this).data("id");
+        
+        if (!confirm("Are you sure you want to delete this competition entry?")) {
+            return;
+        }
+
+        fetch("/api/competition/times", {
+            method: "DELETE",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error || "Operation failed");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Failed to process request");
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

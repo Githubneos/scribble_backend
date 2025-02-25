@@ -307,6 +307,18 @@ def leaderboard_admin():
         leaderboard_data=leaderboard_data
     )
 
+@app.route('/admin/competition')
+@login_required
+def competition_admin():
+    if not current_user.is_authenticated or current_user.role != 'Admin':
+        return redirect(url_for('index'))
+        
+    competition_data = Time.query.all()
+    return render_template(
+        'competition_admin.html', 
+        competition_data=competition_data
+    )
+
 # this runs the flask application on the development server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8203")
