@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1>Leaderboard Management</h1>
+    <table class="table table-striped" id="leaderboardTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Player</th>
+                <th>Drawing</th>
+                <th>Score</th>
+                <th>Speed Factor</th>
+                <th>Date Created</th>
+                <th>Status</th>
+                {% if current_user.role == 'Admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in leaderboard_data %}
+            <tr>
+                <td>{{ entry.id }}</td>
+                <td>{{ entry.profile_name }}</td>
+                <td>{{ entry.drawing_name }}</td>
+                <td>{{ entry.score }}</td>
+                <td>{{ "%.2f"|format(entry.score/500) }}x</td>
+                <td>{{ entry.date_created }}</td>
+                <td>{{ "Active" if not entry.is_deleted else "Deleted" }}</td>
+                {% if current_user.role == 'Admin' %}
+                <td>
+                    <button class="btn btn-danger delete-btn" data-id="{{ entry.id }}">
+                        {{ "Restore" if entry.is_deleted else "Delete" }}
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if current_user.role == 'Admin' %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $("#leaderboardTable").DataTable({
+        order: [[3, 'desc']], // Sort by score by default
+        pageLength: 25
+    });
+
+    // Handle delete/restore button clicks
+    $(document).on("click", ".delete-btn", function() {
+        var id = $(this).data("id");
+        var action = $(this).text().toLowerCase();
+        
+        if (!confirm(`Are you sure you want to ${action} this entry?`)) {
+            return;
+        }
+
+        fetch("/api/leaderboard", {
+            method: "DELETE",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error || "Operation failed");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Failed to process request");
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}
+
+{% block background %}
+{% endblock %}

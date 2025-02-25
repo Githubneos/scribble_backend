@@ -295,6 +295,18 @@ def initialize_tables():
             app.logger.error(f"Error initializing: {str(e)}")
             return jsonify({"error": "Init failed"}), 500
 
+@app.route('/admin/leaderboard')
+@login_required
+def leaderboard_admin():
+    if not current_user.is_authenticated or current_user.role != 'Admin':
+        return redirect(url_for('index'))
+        
+    leaderboard_data = LeaderboardEntry.query.all()
+    return render_template(
+        'leaderboard_admin.html', 
+        leaderboard_data=leaderboard_data
+    )
+
 # this runs the flask application on the development server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8203")
