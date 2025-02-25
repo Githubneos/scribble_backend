@@ -55,7 +55,6 @@ class GuessAPI:
                     "error": str(e)
                 }), 500
 
-        @token_required()
         def get(self):
             """Fetch all guesses or a specific guess by ID"""
             current_user = g.current_user
