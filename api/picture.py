@@ -1,11 +1,10 @@
-from flask import Blueprint, request, g
+from flask import Blueprint, request, jsonify, g
 from flask_restful import Api, Resource
 from datetime import datetime
 import base64
 from api.jwt_authorize import token_required
 from model.picture import Picture, db
 
-# Create Blueprint with same pattern as other APIs
 picture_api = Blueprint('picture_api', __name__, url_prefix='/api')
 api = Api(picture_api)
 
@@ -37,20 +36,16 @@ class PictureAPI:
                         "error": "Bad Request"
                     }, 400
                 
-                # Add file type validation
                 if not file.content_type.startswith('image/'):
                     return {
                         "message": "Invalid file type - must be an image",
                         "error": "Bad Request"
                     }, 400
 
-                # Read and encode image data
                 image_bytes = file.read()
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                # Remove duplicate data URI prefix
                 image_data = f"data:image/png;base64,{image_base64}"
 
-                # Create database entry
                 picture = Picture(
                     user_name=current_user.name,
                     drawing_name=data.get('drawing_name'),
@@ -66,7 +61,7 @@ class PictureAPI:
                 }, 500
 
             except Exception as e:
-                print(f"Upload error: {str(e)}")  # Debug log
+                print(f"Upload error: {str(e)}")
                 return {
                     "message": "Failed to create picture entry",
                     "error": str(e)
@@ -78,12 +73,12 @@ class PictureAPI:
                 pictures = Picture.query.order_by(Picture.created_at.desc()).all()
                 return [p.read() for p in pictures]
             except Exception as e:
-                print(f"Get error: {str(e)}")  # Debug log
-                return []
+                print(f"Get error: {str(e)}")
+                return {}
 
         @token_required()
         def delete(self):
-            """Delete a picture. Admin only."""
+            """Delete a picture (Admin only)"""
             current_user = g.current_user
             
             if current_user.role != 'Admin':
@@ -103,20 +98,23 @@ class PictureAPI:
                 picture = Picture.query.get(data['id'])
                 if not picture:
                     return {
-                        "message": "Picture not found", 
+                        "message": "Picture not found",
                         "error": "Not Found"
                     }, 404
 
-                picture.delete()
+                db.session.delete(picture)
+                db.session.commit()
+                
                 return {
                     "message": "Picture deleted successfully"
                 }, 200
 
             except Exception as e:
-                print(f"Delete error: {str(e)}")  # Debug log
+                db.session.rollback()
                 return {
                     "message": "Failed to delete picture",
                     "error": str(e)
                 }, 500
 
-    api.add_resource(_CRUD, '/picture')
+    # Single resource registration for CRUD operations
+    api.add_resource(_CRUD, '/pictures')

@@ -39,6 +39,15 @@ class Picture(db.Model):
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
 
+    def delete(self):
+        try:
+            db.session.delete(self)
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            return False
+
 def initPictureTable():
     """Create the pictures table if it doesn't exist"""
     try:

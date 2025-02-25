@@ -1,0 +1,107 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1>Drawing Management</h1>
+    <table class="table table-striped" id="pictureTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Drawing Name</th>
+                <th>User</th>
+                <th>Preview</th>
+                <th>Description</th>
+                <th>Created At</th>
+                {% if current_user.role == 'Admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for picture in picture_data %}
+            <tr>
+                <td>{{ picture.id }}</td>
+                <td>{{ picture.drawing_name }}</td>
+                <td>{{ picture.user_name }}</td>
+                <td>
+                    <img src="{{ picture.image_data }}" 
+                         alt="{{ picture.drawing_name }}" 
+                         style="max-width: 100px; max-height: 100px;"
+                         onclick="showFullImage(this.src)"
+                    >
+                </td>
+                <td>{{ picture.description or 'No description' }}</td>
+                <td>{{ picture.created_at }}</td>
+                {% if current_user.role == 'Admin' %}
+                <td>
+                    <button class="btn btn-danger delete-btn" data-id="{{ picture.id }}">
+                        Delete
+                    </button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for full-size image -->
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <img id="fullImage" src="" style="width: 100%;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == 'Admin' %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $("#pictureTable").DataTable({
+        order: [[5, 'desc']], // Sort by creation date by default
+        pageLength: 25
+    });
+
+    // Handle delete button clicks
+    $(document).on("click", ".delete-btn", function() {
+        var id = $(this).data("id");
+        
+        if (!confirm("Are you sure you want to delete this drawing?")) {
+            return;
+        }
+
+        fetch('/api/pictures', {
+            method: "DELETE",
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert(data.message || "Picture deleted successfully");
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Failed to delete picture: " + error.message);
+        });
+    });
+});
+
+function showFullImage(src) {
+    $('#fullImage').attr('src', src);
+    $('#imageModal').modal('show');
+}
+</script>
+{% endif %}
+{% endblock %}

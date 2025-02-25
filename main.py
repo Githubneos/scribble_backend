@@ -319,6 +319,18 @@ def competition_admin():
         competition_data=competition_data
     )
 
+@app.route('/admin/pictures')
+@login_required
+def picture_admin():
+    if not current_user.is_authenticated or current_user.role != 'Admin':
+        return redirect(url_for('index'))
+        
+    picture_data = Picture.query.all()
+    return render_template(
+        'picture_admin.html', 
+        picture_data=picture_data
+    )
+
 # this runs the flask application on the development server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8203")
