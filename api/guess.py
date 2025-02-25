@@ -3,7 +3,6 @@ from flask_restful import Api, Resource
 from datetime import datetime
 from __init__ import app
 from api.jwt_authorize import token_required
-from model.guess import WordGuess
 import random
 
 guess_api = Blueprint('guess_api', __name__, url_prefix='/api')
