@@ -274,14 +274,24 @@
                 <a href="{{ url_for('picture_admin') }}" class="admin-button">Manage Drawings</a>
             </div>
 
-            <div class="admin-card">
-                <h2 class="card-title">Blind Trace Management</h2>
-                <p class="card-description">Manage trace scores and moderate score entries.</p>
-                <a href="{{ url_for('blind_trace_admin') }}" class="admin-button">
-                    Manage Blind Trace
-                </a>
-            </div>
-            
+            <!-- Blind Trace Management Box -->
+<div class="col-md-6 col-lg-4">
+    <div class="card p-3 shadow-lg custom-card">
+        <div class="card-body text-center">
+            <h5 class="card-title">Blind Trace Management</h5>
+            <p class="card-text">
+                <ol class="text-start">
+                    <li>View, edit, and delete blind trace scores</li>
+                    <li>Moderate submissions</li>
+                </ol>
+            </p>
+            <a href="{{ "https://scribble.stu.nighthawkcodingsociety.com/submission}}" class="btn btn-orange d-block mx-auto">
+                Manage Blind Trace
+            </a>
+        </div>
+    </div>
+</div>
+
         </div>
     </div>
 </div>
