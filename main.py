@@ -179,6 +179,14 @@ def reset_password(user_id):
         return jsonify({'message': 'Password reset successfully'}), 200
     return jsonify({'error': 'Password reset failed'}), 500
 
+@app.route('/admin/submission')
+@login_required
+def blind_trace_admin():
+    if not current_user.is_authenticated or current_user.role != 'Admin':
+        return redirect(url_for('index'))
+
+    blind_trace_data = BlindTraceSubmission.query.all()  # Ensure this model exists
+    return render_template('blind_trace_admin.html', blind_trace_data=blind_trace_data)
 
 # Create an AppGroup for custom commands
 custom_cli = AppGroup('custom', help='Custom commands')
