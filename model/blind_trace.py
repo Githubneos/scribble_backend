@@ -49,8 +49,9 @@ class BlindTraceSubmission(db.Model):
         }
 
     def update(self):
-        """Update the submission"""
+        """Update the submission (mark as modified)"""
         try:
+            self.date_modified = datetime.utcnow()  # Automatically update the modification time
             db.session.commit()
             return self
         except Exception as e:

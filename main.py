@@ -33,6 +33,7 @@ from api.guess import guess_api
 from api.leaderboard_api import leaderboard_api  # Keep only one import
 from api.competition import competitors_api
 from api.picture import picture_api # Add this import if not present
+from api.blind_trace import blind_trace_api  # Add this import
 
 # database Initialization functions
 from model.leaderboard import LeaderboardEntry, initLeaderboardTable
@@ -48,7 +49,7 @@ from model.vote import Vote, initVotes
 from model.guess import db, Guess, initGuessDataTable
 from model.picture import Picture, initPictureTable  # Update this line
 from model.competition import Time, initTimerTable  # Add this import
-
+from model.blind_trace import BlindTraceSubmission, initBlindTraceTable # Add this import
 # server only Views
 
 # register URIs for api endpoints
@@ -70,6 +71,7 @@ app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
 app.register_blueprint(picture_api)
+app.register_blueprint(blind_trace_api)  # Add this line
 
 
 # Tell Flask-Login the view function name of your login route
@@ -196,6 +198,7 @@ def generate_data():
     initStatsDataTable()
     initTimerTable()
     initPictureTable()  # Add this line
+    initBlindTraceTable
 
 
 # Backup the old database
@@ -289,6 +292,7 @@ def initialize_tables():
                 initPictureTable()   # Keep this initialization
                 initGuessDataTable()
                 initStatsDataTable()
+                initBlindTraceTable
                 _is_initialized = True
         except Exception as e:
             print(f"Error initializing tables: {str(e)}")  # Add better error logging
@@ -330,6 +334,22 @@ def picture_admin():
         'picture_admin.html', 
         picture_data=picture_data
     )
+    
+    
+@app.route('/admin/blind_trace')
+@login_required
+def blind_trace_admin():
+    if not current_user.is_authenticated or current_user.role != 'Admin':
+        return redirect(url_for('index'))
+
+    # Fetch all non-deleted Blind Trace submissions
+    blind_trace_data = BlindTraceSubmission.query.filter_by(is_deleted=False).all()
+
+    return render_template(
+        'blind_trace_admin.html',
+        blind_trace_data=blind_trace_data
+    )
+
 
 # this runs the flask application on the development server
 if __name__ == "__main__":
