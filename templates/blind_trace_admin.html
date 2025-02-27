@@ -8,8 +8,9 @@
             <tr>
                 <th>ID</th>
                 <th>Player</th>
-                <th>Reference Image</th>
-                <th>Submission</th>
+                <th>Drawing</th>
+                <th>Score</th>
+                <th>Speed Factor</th>
                 <th>Submission Time</th>
                 <th>Status</th>
                 {% if current_user.role == 'Admin' %}
@@ -23,11 +24,6 @@
                 <td>{{ entry.id }}</td>
                 <td>{{ entry.user.profile_name }}</td>
                 <td>
-                    <a href="{{ entry.image_url }}" target="_blank">
-                        <img src="{{ entry.image_url }}" alt="Reference Image" width="50">
-                    </a>
-                </td>
-                <td>
                     {% if entry.drawing_url %}
                         <a href="{{ entry.drawing_url }}" target="_blank">
                             <img src="{{ entry.drawing_url }}" alt="User Submission" width="50">
@@ -36,6 +32,8 @@
                         N/A
                     {% endif %}
                 </td>
+                <td>{{ entry.score }}</td>
+                <td>{{ "%.2f"|format(entry.score/500) }}x</td>
                 <td>{{ entry.submission_time }}</td>
                 <td>{{ "Active" if not entry.is_deleted else "Deleted" }}</td>
                 {% if current_user.role == 'Admin' %}
@@ -56,7 +54,7 @@
 $(document).ready(function() {
     // Initialize DataTable
     $("#blindTraceTable").DataTable({
-        order: [[4, 'desc']], // Sort by submission time by default
+        order: [[3, 'desc']], // Sort by score by default
         pageLength: 25
     });
 
@@ -65,7 +63,7 @@ $(document).ready(function() {
         var id = $(this).data("id");
         var action = $(this).text().toLowerCase();
         
-        if (!confirm(`Are you sure you want to ${action} this submission?`)) {
+        if (!confirm(`Are you sure you want to ${action} this entry?`)) {
             return;
         }
 
