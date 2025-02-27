@@ -342,21 +342,21 @@ def picture_admin():
         'picture_admin.html', 
         picture_data=picture_data
     )
-    
-    
-@app.route('/admin/blind_trace')
+
+@app.route('/admin/submission')
 @login_required
-def blind_trace_admin():
+def manage_blind_trace():
     if not current_user.is_authenticated or current_user.role != 'Admin':
         return redirect(url_for('index'))
 
     # Fetch all non-deleted Blind Trace submissions
     blind_trace_data = BlindTraceSubmission.query.filter_by(is_deleted=False).all()
-
+    
     return render_template(
         'blind_trace_admin.html',
         blind_trace_data=blind_trace_data
     )
+
 
 
 # this runs the flask application on the development server
