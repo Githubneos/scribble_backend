@@ -69,7 +69,7 @@ $(document).ready(function() {
             return;
         }
 
-        fetch("/api/blind_trace", {
+        fetch("/api/submission", {
             method: "DELETE",
             headers: {
                 'Content-Type': 'application/json'
@@ -96,8 +96,3 @@ $(document).ready(function() {
 {% endblock %}
 
 {% block background %}
-@app.route('/blind_trace_admin')
-def blind_trace_admin():
-    # Your view logic here
-    return render_template('blind_trace_admin.html')
-{% endblock %}
