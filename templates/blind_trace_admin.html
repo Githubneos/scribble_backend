@@ -67,7 +67,7 @@ $(document).ready(function() {
             return;
         }
 
-        fetch("/api/submission", {
+        fetch(`${pythonURI}/api/submission`, {
             method: "DELETE",
             headers: {
                 'Content-Type': 'application/json'
