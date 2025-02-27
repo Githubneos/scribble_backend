@@ -96,4 +96,8 @@ $(document).ready(function() {
 {% endblock %}
 
 {% block background %}
+@app.route('/blind_trace_admin')
+def blind_trace_admin():
+    # Your view logic here
+    return render_template('blind_trace_admin.html')
 {% endblock %}
