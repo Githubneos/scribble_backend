@@ -273,18 +273,43 @@
                 <p class="card-description">Configure system parameters, backup data, and manage server settings.</p>
                 <a href="{{ url_for('login') }}" class="admin-button">Settings</a>
             </div>
+            
+            <div class="admin-card">
+                <h2 class="card-title">Blind Trace Management</h2>
+                <p class="card-description">Manage trace scores and moderate score entries.</p>
+                <a href="{{ url_for('blind_trace_admin') }}" class="admin-button">Manage Blind Trace</a>
+            </div>
         </div>
         <div class="admin-card">
             <h2 class="card-title">Drawing Management</h2>
             <p class="card-description">View and manage user drawings, moderate content, and organize submissions.</p>
             <a href="{{ url_for('picture_admin') }}" class="admin-button">Manage Drawings</a>
-            <style>
-                .admin-card {
-                    display: block; /* Ensure the card is displayed */
-                    visibility: visible; /* Ensure the card is visible */
-                }
-            </style>
         </div>
-    </div>
+        
+        <div class="admin-card">
+            <h2 class="card-title">Leaderboard Management</h2>
+            <p class="card-description">Manage drawing scores, view player rankings, and moderate leaderboard entries.</p>
+            <a href="{{ url_for('leaderboard_admin') }}" class="admin-button">Manage Leaderboard</a>
+        </div>
+        
+        <div class="admin-card">
+            <h2 class="card-title">Blind Trace Management</h2>
+            <p class="card-description">Manage trace scores and moderate score entries.</p>
+            <a href="{{ url_for('blind_trace_admin') }}" class="admin-button">Manage Blind Trace</a>
+        </div>
+        
+        <div class="admin-card">
+            <h2 class="card-title">Drawing Analytics</h2>
+            <p class="card-description">View drawing statistics, popular categories, and user engagement metrics.</p>
+            <a href="{{ url_for('login') }}" class="admin-button">View Analytics</a>
+        </div>
+        
+        <div class="admin-card">
+            <h2 class="card-title">System Settings</h2>
+            <p class="card-description">Configure system parameters, backup data, and manage server settings.</p>
+            <a href="{{ url_for('login') }}" class="admin-button">Settings</a>
+        </div>
+        </div>
+        </div>
 </div>
 {% endblock %}
