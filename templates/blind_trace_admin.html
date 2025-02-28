@@ -52,33 +52,29 @@
 {% if current_user.role == 'Admin' %}
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
     $("#blindTraceTable").DataTable({
-        order: [[3, 'desc']], // Sort by score by default
+        order: [[3, 'desc']],
         pageLength: 25
     });
 
-    // Handle delete/restore button clicks
     $(document).on("click", ".delete-btn", function() {
         var id = $(this).data("id");
         var action = $(this).text().toLowerCase();
         
-        if (!confirm(`Are you sure you want to ${action} this entry?`)) {
+        if (!confirm(`Are you sure you want to ${action} this submission?`)) {
             return;
         }
 
-        fetch(`${pythonURI}/api/submission`, {
+        fetch("/api/submission", {
             method: "DELETE",
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: id })
         })
         .then(response => response.json())
         .then(data => {
             if (data.message) {
                 alert(data.message);
-                location.reload();
+                location.reload();  // Refresh to reflect changes
             } else {
                 alert(data.error || "Operation failed");
             }
@@ -91,7 +87,4 @@ $(document).ready(function() {
 });
 </script>
 {% endif %}
-{% endblock %}
-
-{% block background %}
 {% endblock %}
