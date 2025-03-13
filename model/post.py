@@ -7,6 +7,7 @@ from __init__ import app, db
 from model.user import User
 from model.channel import Channel
 class Post(db.Model):
+    # creates the post in discussion channel
     """
     Post Model
     The Post class represents an individual contribution or discussion within a channel.
@@ -18,6 +19,7 @@ class Post(db.Model):
         _user_id (db.Column): An integer representing the user who created the post.
         _channel_id (db.Column): An integer representing the channel to which the post belongs.
     """
+    # defines table name and columns
     __tablename__ = 'posts'
     id = db.Column(db.Integer, primary_key=True)
     _title = db.Column(db.String(255), nullable=False)
@@ -40,6 +42,7 @@ class Post(db.Model):
         self._user_id = user_id
         self._channel_id = channel_id
         self._content = content
+        # initializes a new post object
     def __repr__(self):
         """
         The __repr__ method is a special method used to represent the object in a string format.
@@ -62,6 +65,7 @@ class Post(db.Model):
             logging.warning(f"IntegrityError: Could not create post with title '{self._title}' due to {str(e)}.")
             return None
         return self
+    #  adds the post object to commit the transaction
     def read(self):
         """
         The read method retrieves the object data from the object's attributes and returns it as a dictionary.
@@ -93,6 +97,7 @@ class Post(db.Model):
             setattr(self, key, value)
         db.session.commit()
         return self
+    # update and delete commands
     def delete(self):
         """
         The delete method removes the object from the database and commits the transaction.
@@ -119,6 +124,7 @@ class Post(db.Model):
                 post = Post(**post_data)
                 post.update(post_data)
                 post.create()
+                # restores posts from list of dictionaries
 def initPosts():
     """
     The initPosts function creates the Post table and adds tester data to the table.
